@@ -9,17 +9,18 @@ export default function App() {
   const shadowCameraRef = useRef()
 
   // State for the number of shelves along each axis
-  const [shelvesX, setShelvesX] = useState(3)
+  const [shelvesX, setShelvesX] = useState(6)
   const [shelvesY, setShelvesY] = useState(3)
-  const [shelvesZ, setShelvesZ] = useState(3)
+  const [shelvesZ, setShelvesZ] = useState(6) // Adjust for back-to-back pairs
   
   // State for the gaps between shelves on each axis
   const [gapX, setGapX] = useState(2)
   const [gapY, setGapY] = useState(2)
-  const [gapZ, setGapZ] = useState(7)
+  const [gapZ, setGapZ] = useState(7) // Larger gap between pairs on z-axis
+  const [pairGap, setPairGap] = useState(1.2) // Gap inside each back-to-back pair
   
   // State for each box's presence
-  const [boxData, setBoxData] = useState(initializeBoxData(3, 3, 3))
+  const [boxData, setBoxData] = useState(initializeBoxData(3, 3, 6))
 
   // Track the currently selected box for toggling presence
   const [selectedBox, setSelectedBox] = useState(null)
@@ -63,14 +64,16 @@ export default function App() {
         <label>Shelves Y: </label>
         <input type="number" value={shelvesY} onChange={(e) => setShelvesY(Math.max(1, parseInt(e.target.value) || 1))} min="1" />
         <label>Shelves Z: </label>
-        <input type="number" value={shelvesZ} onChange={(e) => setShelvesZ(Math.max(1, parseInt(e.target.value) || 1))} min="1" />
+        <input type="number" value={shelvesZ} onChange={(e) => setShelvesZ(Math.max(2, parseInt(e.target.value) || 2))} min="2" step="2" />
 
         <label>Gap X: </label>
         <input type="number" value={gapX} onChange={(e) => setGapX(parseFloat(e.target.value) || 0)} min="0" />
         <label>Gap Y: </label>
         <input type="number" value={gapY} onChange={(e) => setGapY(parseFloat(e.target.value) || 0)} min="0" />
-        <label>Gap Z: </label>
+        <label>Gap Z (between pairs): </label>
         <input type="number" value={gapZ} onChange={(e) => setGapZ(parseFloat(e.target.value) || 0)} min="0" />
+        <label>Pair Gap (inside): </label>
+        <input type="number" value={pairGap} onChange={(e) => setPairGap(parseFloat(e.target.value) || 0)} min="0" />
       </div>
 
       {/* UI Panel to toggle box presence */}
@@ -88,45 +91,52 @@ export default function App() {
         </div>
       )}
 
-      <Canvas shadows dpr={1.5} orthographic camera={{ position: [10, 20, -15], zoom: 80, near: 1, far: 1000 }}>
+      <Canvas shadows dpr={1.5} orthographic camera={{ position: [25, 35, -22], zoom: 30, near: 1, far: 1000 }}>
         <SoftShadows samples={16} size={15} />
         <OrbitControls enableRotate minPolarAngle={Math.PI / 4} maxPolarAngle={Math.PI / 4} />
         <LogCamera />
         <Stage shadowCameraRef={shadowCameraRef} />
 
-        {/* Render shelves with dynamic gaps */}
+        {/* Render shelves with dynamic gaps and back-to-back layout on z-axis */}
         {Array.from({ length: shelvesX }, (_, x) =>
           Array.from({ length: shelvesY }, (_, y) =>
-            Array.from({ length: shelvesZ }, (_, z) => (
-              <Shelf 
-                key={`shelf-${x}-${y}-${z}`}
-                position={[
-                  x * gapX, // Apply gap along x-axis
-                  y * gapY, // Apply gap along y-axis
-                  z * gapZ  // Apply gap along z-axis
-                ]}
-              />
-            ))
+            Array.from({ length: shelvesZ }, (_, z) => {
+              // Calculate z position for back-to-back shelving with a larger gap after each pair
+              const zPosition = (z % 2 === 0 ? 0 : pairGap) + Math.floor(z / 2) * (gapZ + pairGap);
+              return (
+                <Shelf 
+                  key={`shelf-${x}-${y}-${z}`}
+                  position={[
+                    x * gapX, // Apply gap along x-axis
+                    y * gapY, // Apply gap along y-axis
+                    zPosition // Back-to-back logic for z-axis
+                  ]}
+                />
+              )
+            })
           )
         )}
 
         {/* Render boxes based on boxData presence, ensuring boxData is initialized */}
         {boxData && Array.from({ length: shelvesX }, (_, x) =>
           Array.from({ length: shelvesY }, (_, y) =>
-            Array.from({ length: shelvesZ }, (_, z) =>
-              boxData[x]?.[y]?.[z]?.present && (
-                <Box
-                  key={`box-${x}-${y}-${z}`}
-                  position={[
-                    x * gapX,       // Align with shelf x position
-                    y * gapY + 0.6, // Slightly above the shelf to sit on top
-                    z * gapZ        // Align with shelf z position
-                  ]}
-                  onClick={() => setSelectedBox({ x, y, z })} // Open UI on click
-                  isSelected={selectedBox && selectedBox.x === x && selectedBox.y === y && selectedBox.z === z} // Highlight selected box
-                />
-              )
-            )
+            Array.from({ length: shelvesZ }, (_, z) => {
+              const zPosition = (z % 2 === 0 ? 0 : pairGap) + Math.floor(z / 2) * (gapZ + pairGap);
+              return (
+                boxData[x]?.[y]?.[z]?.present && (
+                  <Box
+                    key={`box-${x}-${y}-${z}`}
+                    position={[
+                      x * gapX,       // Align with shelf x position
+                      y * gapY + 0.6, // Slightly above the shelf to sit on top
+                      zPosition       // Back-to-back logic for z-axis
+                    ]}
+                    onClick={() => setSelectedBox({ x, y, z })} // Open UI on click
+                    isSelected={selectedBox && selectedBox.x === x && selectedBox.y === y && selectedBox.z === z} // Highlight selected box
+                  />
+                )
+              );
+            })
           )
         )}
 
@@ -154,7 +164,7 @@ function Shelf(props) {
       receiveShadow
       castShadow>
       <boxGeometry args={[1.5, 0.2, 1.2]} />
-      <meshStandardMaterial roughness={1} transparent opacity={0.95} color={'white'} />
+      <meshStandardMaterial roughness={1} transparent opacity={1} color={'#f97316'} />
     </mesh>
   )
 }
@@ -177,8 +187,8 @@ function Box({ onClick, isSelected, ...props }) {
       <meshStandardMaterial
         roughness={1}
         transparent
-        opacity={0.95}
-        color={isSelected ? '#f97316' : hovered ? '#fb923c' : 'white'} // Change color based on selection and hover
+        opacity={1}
+        color={isSelected ? '#fdba74' : hovered ? '#fed7aa' : 'white'} // Change color based on selection and hover
       />
     </mesh>
   )
