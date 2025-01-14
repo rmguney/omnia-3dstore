@@ -1,67 +1,88 @@
 'use client'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { CycleRaycast, OrbitControls, SoftShadows } from '@react-three/drei'
+import { PointerLockControls, OrbitControls } from '@react-three/drei'
+import * as THREE from 'three'
 import useStore from '@/store/store'
 import Box from './Box'
 import Shelf from './Shelf'
-import Stage from './Stage'
 
-function LogCamera() {
+function FirstPersonCamera() {
   const { camera } = useThree()
-  useFrame(() => {
-    console.log('Camera Position:', camera.position)
-    console.log('Camera Rotation:', camera.rotation)
-  })
-  return null
-}
-
-function CenterScene() {
-  const { camera, controls } = useThree()
-  const store = useStore()
+  const moveState = useRef({ forward: false, backward: false, left: false, right: false })
+  const speed = 0.15
+  const direction = useRef(new THREE.Vector3())
+  const frontVector = useRef(new THREE.Vector3())
+  const sideVector = useRef(new THREE.Vector3())
 
   useEffect(() => {
-    // Calculate actual scene dimensions with exact object sizes
-    const totalWidth = (store.shelvesX - 1) * store.gapX + 1.5
-    const totalHeight = (store.shelvesY - 1) * store.gapY + 1.6 // Increased for box height
-    const totalDepth = ((store.shelvesZ / 2) - 1) * (store.gapZ + store.pairGap) + store.pairGap + 1.2
+    camera.position.set(0, 2, 5)
 
-    // Calculate exact center
-    const centerX = totalWidth / 2
-    const centerY = totalHeight / 2
-    const centerZ = totalDepth / 2
-
-    // Much tighter zoom calculation
-    const aspectRatio = window.innerWidth / window.innerHeight
-    const viewportHeight = Math.max(totalHeight, totalWidth / aspectRatio, totalDepth)
-    const padding = 1.1 
-    const zoom = 500 / (viewportHeight * padding) // base zoom
-
-    // Closer camera distance
-    const distance = Math.max(totalWidth, totalHeight, totalDepth) * 0.2
-
-    // Position camera closer while maintaining angle
-    camera.position.set(
-      centerX + distance * 0.6, // Reduced from 0.7
-      centerY + distance * 0.6,
-      -centerZ - distance * 0.6
-    )
-    camera.zoom = zoom * 1.2 // Additional zoom factor
-    camera.updateProjectionMatrix()
-
-    // Center controls precisely
-    if (controls) {
-      controls.target.set(centerX, centerY, -centerZ)
-      controls.update()
+    const handleKeyDown = (e) => {
+      switch(e.code) {
+        case 'KeyW': moveState.current.forward = true; break
+        case 'KeyS': moveState.current.backward = true; break
+        case 'KeyA': moveState.current.left = true; break
+        case 'KeyD': moveState.current.right = true; break
+      }
     }
-  }, [store.shelvesX, store.shelvesY, store.shelvesZ, store.gapX, store.gapY, store.gapZ, store.pairGap])
 
-  return null
+    const handleKeyUp = (e) => {
+      switch(e.code) {
+        case 'KeyW': moveState.current.forward = false; break
+        case 'KeyS': moveState.current.backward = false; break
+        case 'KeyA': moveState.current.left = false; break
+        case 'KeyD': moveState.current.right = false; break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [camera])
+
+  useFrame(() => {
+    frontVector.current.set(0, 0, Number(moveState.current.backward) - Number(moveState.current.forward))
+    sideVector.current.set(Number(moveState.current.left) - Number(moveState.current.right), 0, 0)
+
+    direction.current
+      .subVectors(frontVector.current, sideVector.current)
+      .normalize()
+      .multiplyScalar(speed)
+      .applyEuler(camera.rotation)
+
+    camera.position.add(direction.current)
+  })
+
+  return <PointerLockControls />
+}
+
+function OrbitCamera() {
+  const { camera } = useThree()
+  
+  useEffect(() => {
+    camera.position.set(15, 15, 15)
+    camera.lookAt(0, 0, 0)
+  }, [camera])
+
+  return <OrbitControls makeDefault />
+}
+
+function HoverInfo({ content }) {
+  return (
+    <div className="hover-info">
+      {content}
+    </div>
+  )
 }
 
 export default function Scene() {
-  const shadowCameraRef = useRef()
   const store = useStore()
+  const shadowCameraRef = useRef()
+  const [hoveredBox, setHoveredBox] = useState(null)
   
   useEffect(() => {
     store.initializeBoxData()
@@ -69,47 +90,52 @@ export default function Scene() {
 
   return (
     <>
-      {store.selectedBox && (
-        <div className="box-controls">
-          <h3>Box Controls for ({store.selectedBox.x}, {store.selectedBox.y}, {store.selectedBox.z})</h3>
-          <label>
-            Present:
-            <input
-              type="checkbox"
-              checked={store.boxData[store.selectedBox.x][store.selectedBox.y][store.selectedBox.z]?.present}
-              onChange={store.toggleBoxPresence}
-            />
-          </label>
-        </div>
-      )}
+      <button 
+        onClick={store.toggleCameraMode}
+        className="camera-mode-button"
+      >
+        {store.isFirstPerson ? 'Yörüngesel Kamera' : 'Birinci Şahıs Kamera'}
+      </button>
 
-      <Canvas shadows dpr={1.5} orthographic camera={{ position: [25, 35, -22], zoom: 30, near: 1, far: 1000 }}>
-        <SoftShadows samples={16} size={15} />
-        <OrbitControls 
-          enableRotate 
-          minPolarAngle={Math.PI / 4} 
-          maxPolarAngle={Math.PI / 4}
-          makeDefault // Important: makes controls available via useThree
+      <Canvas shadows camera={{ fov: 75 }}>
+        {store.isFirstPerson ? <FirstPersonCamera /> : <OrbitCamera />}
+        
+        <ambientLight intensity={0.9} />
+        <directionalLight
+          ref={shadowCameraRef}
+          position={[1, 10, -2]}
+          intensity={2}
+          shadow-camera-far={200}
+          shadow-camera-left={-40}
+          shadow-camera-right={40}
+          shadow-camera-top={40}
+          shadow-camera-bottom={-40}
+          shadow-mapSize={[4096, 4096]}
+          shadow-bias={-0.0005}
+          castShadow
         />
-        <CenterScene />
-        <LogCamera />
-        <Stage shadowCameraRef={shadowCameraRef} />
-
-        {/* Render grid */}
-        {Array.from({ length: store.shelvesX }, (_, x) =>
+        <directionalLight position={[-10, -10, 2]} intensity={3} />
+        <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, -0.75, 0]}>
+          <planeGeometry args={[80, 80]} />
+          <shadowMaterial opacity={0.2} />
+        </mesh>
+        
+        {/* Scene objects */}
+        {store.boxData && Array.from({ length: store.shelvesX }, (_, x) =>
           Array.from({ length: store.shelvesY }, (_, y) =>
             Array.from({ length: store.shelvesZ }, (_, z) => {
               const zPosition = (z % 2 === 0 ? 0 : store.pairGap) + 
-                              Math.floor(z / 2) * (store.gapZ + store.pairGap);
+                              Math.floor(z / 2) * (store.gapZ + store.pairGap)
+              const box = store.boxData[x][y][z]
               return (
                 <group key={`group-${x}-${y}-${z}`}>
-                  <Shelf 
-                    position={[x * store.gapX, y * store.gapY, zPosition]}
-                  />
-                  {store.boxData?.[x]?.[y]?.[z]?.present && (
+                  <Shelf position={[x * store.gapX, y * store.gapY, zPosition]} />
+                  {box.present && (
                     <Box
                       position={[x * store.gapX, y * store.gapY + 0.6, zPosition]}
                       onClick={() => store.setSelectedBox({ x, y, z })}
+                      onPointerOver={() => setHoveredBox(box.content)}
+                      onPointerOut={() => setHoveredBox(null)}
                       isSelected={store.selectedBox && 
                                 store.selectedBox.x === x && 
                                 store.selectedBox.y === y && 
@@ -122,6 +148,8 @@ export default function Scene() {
           )
         )}
       </Canvas>
+
+      {hoveredBox && <HoverInfo content={hoveredBox} />}
     </>
   )
 }

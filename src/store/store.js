@@ -1,51 +1,46 @@
 import { create } from 'zustand'
+import { apiData } from './mockAPI'
 
 const useStore = create((set) => ({
-  // Shelf dimensions
-  shelvesX: 6,
-  shelvesY: 3,
-  shelvesZ: 6,
-  
-  // Gaps
+  // Scene configuration
+  shelvesX: apiData.shelvesX,
+  shelvesY: apiData.shelvesY,
+  shelvesZ: apiData.shelvesZ,
   gapX: 2,
   gapY: 2,
   gapZ: 7,
   pairGap: 1.2,
   
-  // Box data
-  boxData: null,
+  // Box state
+  boxData: apiData.boxData,
   selectedBox: null,
 
-  // Actions
-  setDimensions: (dimensions) => set(dimensions),
-  setGaps: (gaps) => set(gaps),
-  
-  initializeBoxData: () => {
-    const { shelvesX, shelvesY, shelvesZ } = useStore.getState()
-    const boxData = Array.from({ length: shelvesX }, () =>
-      Array.from({ length: shelvesY }, () => 
-        Array.from({ length: shelvesZ }, () => ({ present: true }))
-      )
-    )
-    set({ boxData })
-  },
+  // Camera state
+  isFirstPerson: false,
+  toggleCameraMode: () => set(state => ({ isFirstPerson: !state.isFirstPerson })),
 
+  // Essential actions only
   setSelectedBox: (box) => set({ selectedBox: box }),
-
   toggleBoxPresence: () => {
     const { selectedBox, boxData } = useStore.getState()
-    if (selectedBox) {
-      const { x, y, z } = selectedBox
-      const newData = boxData.map((planeX, i) =>
-        planeX.map((planeY, j) =>
-          planeY.map((box, k) =>
-            i === x && j === y && k === z ? { present: !box.present } : box
-          )
+    if (!selectedBox || !boxData) return
+    const { x, y, z } = selectedBox
+    const newData = [...boxData]
+    newData[x][y][z].present = !newData[x][y][z].present
+    set({ boxData: newData })
+  },
+  initializeBoxData: () => {
+    const { shelvesX, shelvesY, shelvesZ } = useStore.getState()
+    set({ 
+      boxData: Array.from({ length: shelvesX }, () =>
+        Array.from({ length: shelvesY }, () => 
+          Array.from({ length: shelvesZ }, () => ({ present: true }))
         )
       )
-      set({ boxData: newData })
-    }
-  }
+    })
+  },
+  setDimensions: (dimensions) => set((state) => ({ ...state, ...dimensions })),
+  setGaps: (gaps) => set((state) => ({ ...state, ...gaps })),
 }))
 
 export default useStore

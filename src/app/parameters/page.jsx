@@ -6,17 +6,21 @@ export default function Parameters() {
   const store = useStore()
 
   const handleDimensionChange = (key, value) => {
-    store.setDimensions({ [key]: Math.max(1, parseInt(value) || 1) })
+    const newValue = Math.max(1, parseInt(value) || 1)
+    store.setDimensions({ [key]: newValue })
     store.initializeBoxData()
+    apiData[key] = newValue // Update apiData
   }
 
   const handleGapChange = (key, value) => {
-    store.setGaps({ [key]: parseFloat(value) || 0 })
+    const newValue = parseFloat(value) || 0
+    store.setGaps({ [key]: newValue })
+    apiData[key] = newValue // Update apiData
   }
 
   return (
     <div className="parameters-page">
-      <Link href="/" className="back-button">Görüntülemeye Dön</Link>
+      <Link href="/" className="back-button">Sahne</Link>
       
       <div className="controls">
         <label>Raflar X: </label>

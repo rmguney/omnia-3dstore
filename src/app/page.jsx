@@ -1,5 +1,5 @@
 'use client'
-import './styles.css'
+import './globals.css'
 import Link from 'next/link'
 import Scene from '@/components/Scene'
 
