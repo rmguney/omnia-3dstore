@@ -121,16 +121,20 @@ export default function Scene() {
         </mesh>
         
         {/* Scene objects */}
-        {store.boxData && Array.from({ length: store.shelvesX }, (_, x) =>
+        {Array.from({ length: store.shelvesX }, (_, x) =>
           Array.from({ length: store.shelvesY }, (_, y) =>
             Array.from({ length: store.shelvesZ }, (_, z) => {
               const zPosition = (z % 2 === 0 ? 0 : store.pairGap) + 
-                              Math.floor(z / 2) * (store.gapZ + store.pairGap)
-              const box = store.boxData[x][y][z]
+                                Math.floor(z / 2) * (store.gapZ + store.pairGap)
+              const box = store.boxData.find(box => 
+                box.boxNumber[0] === x && 
+                box.boxNumber[1] === y && 
+                box.boxNumber[2] === z
+              )
               return (
                 <group key={`group-${x}-${y}-${z}`}>
                   <Shelf position={[x * store.gapX, y * store.gapY, zPosition]} />
-                  {box.present && (
+                  {box && (
                     <Box
                       position={[x * store.gapX, y * store.gapY + 0.6, zPosition]}
                       onClick={() => store.setSelectedBox({ x, y, z })}

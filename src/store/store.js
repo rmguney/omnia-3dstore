@@ -12,7 +12,7 @@ const useStore = create((set) => ({
   pairGap: 1.2,
   
   // Box state
-  boxData: apiData.boxData,
+  boxData: apiData.boxData || [],
   selectedBox: null,
 
   // Camera state
@@ -24,20 +24,19 @@ const useStore = create((set) => ({
   toggleBoxPresence: () => {
     const { selectedBox, boxData } = useStore.getState()
     if (!selectedBox || !boxData) return
-    const { x, y, z } = selectedBox
+    const boxIndex = boxData.findIndex(box => 
+      box.boxNumber && 
+      box.boxNumber[0] === selectedBox.x && 
+      box.boxNumber[1] === selectedBox.y && 
+      box.boxNumber[2] === selectedBox.z
+    )
+    if (boxIndex === -1) return
     const newData = [...boxData]
-    newData[x][y][z].present = !newData[x][y][z].present
+    newData[boxIndex].present = !newData[boxIndex].present
     set({ boxData: newData })
   },
   initializeBoxData: () => {
-    const { shelvesX, shelvesY, shelvesZ } = useStore.getState()
-    set({ 
-      boxData: Array.from({ length: shelvesX }, () =>
-        Array.from({ length: shelvesY }, () => 
-          Array.from({ length: shelvesZ }, () => ({ present: true }))
-        )
-      )
-    })
+    set({ boxData: apiData.boxData })
   },
   setDimensions: (dimensions) => set((state) => ({ ...state, ...dimensions })),
   setGaps: (gaps) => set((state) => ({ ...state, ...gaps })),
