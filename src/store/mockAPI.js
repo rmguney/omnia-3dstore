@@ -3,9 +3,9 @@
 
 export const apiData = {
   // Scene configuration
-  shelvesX: 10, // Number of shelves in the X direction
-  shelvesY: 3, // Number of shelves in the Y direction
-  shelvesZ: 6, // Number of shelves in the Z direction
+  shelvesX: 12, // Number of shelves in the X direction
+  shelvesY: 4, // Number of shelves in the Y direction
+  shelvesZ: 12, // Number of shelves in the Z direction
 
   // Box state data
   boxData: [

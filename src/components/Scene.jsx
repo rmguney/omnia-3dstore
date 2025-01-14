@@ -124,8 +124,8 @@ export default function Scene() {
         {Array.from({ length: store.shelvesX }, (_, x) =>
           Array.from({ length: store.shelvesY }, (_, y) =>
             Array.from({ length: store.shelvesZ }, (_, z) => {
-              const zPosition = (z % 2 === 0 ? 0 : store.pairGap) + 
-                                Math.floor(z / 2) * (store.gapZ + store.pairGap)
+              const zPosition = (z % 2 === 0 ? 0 : store.gapZ) + 
+                                Math.floor(z / 2) * (store.backGap + store.gapZ)
               const box = store.boxData.find(box => 
                 box.boxNumber[0] === x && 
                 box.boxNumber[1] === y && 

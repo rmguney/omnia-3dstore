@@ -6,10 +6,10 @@ const useStore = create((set) => ({
   shelvesX: apiData.shelvesX,
   shelvesY: apiData.shelvesY,
   shelvesZ: apiData.shelvesZ,
-  gapX: 2,
+  gapX: 1.51,
   gapY: 2,
   gapZ: 7,
-  pairGap: 1.2,
+  backGap: 1.5,
   
   // Box state
   boxData: apiData.boxData || [],

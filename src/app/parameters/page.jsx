@@ -70,8 +70,8 @@ export default function Parameters() {
         <label>Sırt Aralığı: </label>
         <input 
           type="number" 
-          value={store.pairGap} 
-          onChange={(e) => handleGapChange('pairGap', e.target.value)} 
+          value={store.backGap} 
+          onChange={(e) => handleGapChange('backGap', e.target.value)} 
           min="0" 
         />
       </div>
