@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import useStore from '@/store/store'
+import { stores } from '@/store/mockAPI'
 
 export default function Parameters() {
   const store = useStore()
@@ -9,27 +10,32 @@ export default function Parameters() {
     const newValue = Math.max(1, parseInt(value) || 1)
     store.setDimensions({ [key]: newValue })
     store.initializeBoxData()
-    apiData[key] = newValue // Update apiData
+    stores[store.selectedStore][key] = newValue // Update stores
   }
 
   const handleGapChange = (key, value) => {
     const newValue = parseFloat(value) || 0
     store.setGaps({ [key]: newValue })
-    apiData[key] = newValue // Update apiData
+    stores[store.selectedStore][key] = newValue // Update stores
+  }
+
+  const handleShelvesXPerRowChange = (index, value) => {
+    const newValue = Math.max(1, parseInt(value) || 1)
+    const newShelvesXPerRow = [...store.shelvesXPerRow]
+    newShelvesXPerRow[index] = newValue
+    store.setShelvesXPerRow(newShelvesXPerRow)
+    stores[store.selectedStore].shelvesXPerRow = newShelvesXPerRow // Update stores
+  }
+
+  const handlePlaneOffsetChange = (key, value) => {
+    const newValue = parseFloat(value) || 0
+    store.setPlaneOffsets({ [key]: newValue })
   }
 
   return (
-    <div className="parameters-page">
-      <Link href="/" className="back-button">Sahne</Link>
-      
-      <div className="controls">
-        <label>Raflar X: </label>
-        <input 
-          type="number" 
-          value={store.shelvesX} 
-          onChange={(e) => handleDimensionChange('shelvesX', e.target.value)} 
-          min="1" 
-        />
+    <div className="p-5">
+      <Link href="/" className="inline-block mb-5 px-4 py-2 bg-orange-500 text-white rounded no-underline">Sahne</Link>
+      <div className="grid grid-cols-[auto_1fr] gap-2.5 items-center max-w-[600px]">
         <label>Raflar Y: </label>
         <input 
           type="number" 
@@ -45,6 +51,18 @@ export default function Parameters() {
           min="2" 
           step="2" 
         />
+
+        {Array.from({ length: store.shelvesZ }, (_, index) => (
+          <div key={index}>
+            <label>{`Raflar X${index}: `}</label>
+            <input 
+              type="number" 
+              value={store.shelvesXPerRow[index]} 
+              onChange={(e) => handleShelvesXPerRowChange(index, e.target.value)} 
+              min="1" 
+            />
+          </div>
+        ))}
 
         <label>Aralık X: </label>
         <input 
@@ -75,6 +93,9 @@ export default function Parameters() {
           min="0" 
         />
       </div>
+      <span className="block mt-5 text-sm text-orange-500">
+      Bu sayfa yalnızca geliştirme testleri içindir, final versiyonunda kullanılmayacak
+      </span>
     </div>
   )
 }

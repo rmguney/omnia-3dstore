@@ -71,39 +71,39 @@ function OrbitCamera() {
   return <OrbitControls makeDefault />
 }
 
-function HoverInfo({ content }) {
-  return (
-    <div className="hover-info">
-      {content}
-    </div>
-  )
-}
-
-export default function Scene() {
+export default function Scene({ onPointerOver, onPointerOut }) {
   const store = useStore()
   const shadowCameraRef = useRef()
   const [hoveredBox, setHoveredBox] = useState(null)
+  const [hoveredBoxNumber, setHoveredBoxNumber] = useState(null)
   
   useEffect(() => {
     store.initializeBoxData()
   }, [])
 
+  const handlePointerOver = (content, boxNumber) => {
+    onPointerOver && onPointerOver(content, boxNumber)
+  }
+
+  const handlePointerOut = () => {
+    onPointerOut && onPointerOut()
+  }
+  const widthOffset= 30;
+  const depthOffset= -10;
+  const planeWidth = Math.max(...store.shelvesXPerRow) * store.gapX + widthOffset
+  const planeDepth = store.shelvesZ * store.gapZ + (Math.floor(store.shelvesZ / 2) * store.backGap) + depthOffset
+  const shelvesCenterX = (Math.max(...store.shelvesXPerRow) - 1) * store.gapX / 2
+  const shelvesCenterZ = (store.shelvesZ - 1) * (store.gapZ + store.backGap) / 4
+
   return (
     <>
-      <button 
-        onClick={store.toggleCameraMode}
-        className="camera-mode-button"
-      >
-        {store.isFirstPerson ? 'Yörüngesel Kamera' : 'Birinci Şahıs Kamera'}
-      </button>
-
       <Canvas shadows camera={{ fov: 75 }}>
         {store.isFirstPerson ? <FirstPersonCamera /> : <OrbitCamera />}
         
         <ambientLight intensity={0.9} />
         <directionalLight
           ref={shadowCameraRef}
-          position={[1, 10, -2]}
+          position={[5, 15, -5]} // Adjusted position for more angle
           intensity={2}
           shadow-camera-far={200}
           shadow-camera-left={-40}
@@ -114,16 +114,16 @@ export default function Scene() {
           shadow-bias={-0.0005}
           castShadow
         />
-        <directionalLight position={[-10, -10, 2]} intensity={3} />
+        <directionalLight position={[-15, -15, 5]} intensity={3} /> {/* Adjusted position for more angle */}
         <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, -0.75, 0]}>
-          <planeGeometry args={[80, 80]} />
-          <shadowMaterial opacity={0.2} />
+          <planeGeometry args={[planeWidth, planeDepth]} />
+          <meshStandardMaterial color="#172554" />
         </mesh>
         
         {/* Scene objects */}
-        {Array.from({ length: store.shelvesX }, (_, x) =>
+        {Array.from({ length: store.shelvesZ }, (_, z) =>
           Array.from({ length: store.shelvesY }, (_, y) =>
-            Array.from({ length: store.shelvesZ }, (_, z) => {
+            Array.from({ length: store.shelvesXPerRow[z] }, (_, x) => {
               const zPosition = (z % 2 === 0 ? 0 : store.gapZ) + 
                                 Math.floor(z / 2) * (store.backGap + store.gapZ)
               const box = store.boxData.find(box => 
@@ -133,13 +133,15 @@ export default function Scene() {
               )
               return (
                 <group key={`group-${x}-${y}-${z}`}>
-                  <Shelf position={[x * store.gapX, y * store.gapY, zPosition]} />
+                  <Shelf position={[x * store.gapX - shelvesCenterX, y * store.gapY, zPosition - shelvesCenterZ]} />
                   {box && (
                     <Box
-                      position={[x * store.gapX, y * store.gapY + 0.6, zPosition]}
+                      position={[x * store.gapX - shelvesCenterX, y * store.gapY + 0.6, zPosition - shelvesCenterZ]}
                       onClick={() => store.setSelectedBox({ x, y, z })}
-                      onPointerOver={() => setHoveredBox(box.content)}
-                      onPointerOut={() => setHoveredBox(null)}
+                      onPointerOver={() => handlePointerOver(box.content, box.boxNumber)}
+                      onPointerOut={handlePointerOut}
+                      content={box.content}
+                      boxNumber={box.boxNumber}
                       isSelected={store.selectedBox && 
                                 store.selectedBox.x === x && 
                                 store.selectedBox.y === y && 
@@ -152,8 +154,8 @@ export default function Scene() {
           )
         )}
       </Canvas>
-
-      {hoveredBox && <HoverInfo content={hoveredBox} />}
+      
+      {store.isFirstPerson && <div className="fixed top-1/2 left-1/2 w-2.5 h-2.5 bg-orange-500 rounded-full transform -translate-x-1/2 -translate-y-1/2 z-50"></div>}
     </>
   )
 }

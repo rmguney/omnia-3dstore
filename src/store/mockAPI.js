@@ -1,44 +1,52 @@
 // This store is used to mimic the API only. It is not used in the final version of the project.
 // it gets the number of shelves and what is inside the boxes from the api and sets the scene accordingly
 
-export const apiData = {
-  // Scene configuration
-  shelvesX: 12, // Number of shelves in the X direction
-  shelvesY: 4, // Number of shelves in the Y direction
-  shelvesZ: 12, // Number of shelves in the Z direction
-
-  // Box state data
-  boxData: [
-    { boxNumber: [0, 0, 0], content: 'Box 1' },
-    { boxNumber: [1, 0, 0], content: 'Box 2' },
-    { boxNumber: [3, 0, 0], content: 'Box 4' },
-    { boxNumber: [4, 0, 0], content: 'Box 5' },
-    { boxNumber: [0, 1, 0], content: 'Box 7' },
-    { boxNumber: [1, 1, 0], content: 'Box 8' },
-    { boxNumber: [2, 1, 0], content: 'Box 9' },
-    { boxNumber: [3, 1, 0], content: 'Box 10' },
-    { boxNumber: [4, 1, 0], content: 'Box 11' },
-    { boxNumber: [5, 1, 0], content: 'Box 12' },
-    { boxNumber: [0, 2, 0], content: 'Box 13' },
-    { boxNumber: [1, 2, 0], content: 'Box 14' },
-    { boxNumber: [2, 2, 0], content: 'Box 15' },
-    { boxNumber: [3, 2, 0], content: 'Box 16' },
-    { boxNumber: [4, 2, 0], content: 'Box 17' },
-    { boxNumber: [5, 2, 0], content: 'Box 18' },
-    { boxNumber: [0, 0, 1], content: 'Box 19' },
-    { boxNumber: [1, 0, 1], content: 'Box 20' },
-    { boxNumber: [2, 0, 1], content: 'Box 21' },
-    { boxNumber: [3, 0, 1], content: 'Box 22' },
-    { boxNumber: [4, 0, 1], content: 'Box 23' },
-    { boxNumber: [5, 0, 1], content: 'Box 24' },
-    { boxNumber: [0, 1, 1], content: 'Box 25' },
-    { boxNumber: [1, 1, 1], content: 'Box 26' },
-    { boxNumber: [2, 1, 1], content: 'Box 27' },
-    { boxNumber: [3, 1, 1], content: 'Box 28' },
-    { boxNumber: [4, 1, 1], content: 'Box 29' },
-    { boxNumber: [5, 1, 1], content: 'Box 30' },
-    // Add more boxes as needed
-  ],
+export const stores = {
+  store1: {
+    storeName: "Çerkezköy Depo - 1",
+    shelvesY: 3,
+    shelvesZ: 12,
+    shelvesXPerRow: [16, 24, 24, 24, 14, 24, 24, 24, 14, 24, 24, 16],
+    boxData: [
+      { boxNumber: [0, 0, 0], content: 'GOLDEN KUVERTÜR BİTTER PARA (9101-C)' },
+      { boxNumber: [1, 0, 0], content: 'IREKS ARTISANO H' },
+      { boxNumber: [3, 0, 0], content: 'BAVYERA PURPUR MIX 25KG' },
+      { boxNumber: [4, 0, 0], content: 'MELLA KUVERTÜR SÜTLÜ PARA - ALT211' },
+      { boxNumber: [0, 1, 0], content: 'SPONGE CAKE MIX GF' },
+      { boxNumber: [1, 1, 0], content: 'BUĞDAY UNU PASTACILIK OVA 25 KG' },
+      { boxNumber: [2, 1, 0], content: 'SIMALTEX 15KG' },
+      { boxNumber: [3, 1, 0], content: 'SPONGE CAKE MIX GF' },
+      { boxNumber: [4, 1, 0], content: '40X30X30 EKMEKÇİLİK BASKISIZ' },
+      { boxNumber: [5, 1, 0], content: '45X30X27 NUMUNE KOLİSİ' },
+      { boxNumber: [0, 2, 0], content: 'MELLA MUFFIN RUHR KONSANTRE 25KG H' },
+      { boxNumber: [1, 2, 0], content: 'PARRLA MIRROR SOS-BİTTER' },
+      { boxNumber: [2, 2, 0], content: '32*32*15 KABARTMA TOZU BA' },
+      { boxNumber: [3, 2, 0], content: 'PARRLA MIRROR SOS-YABANMERSİNİ' },
+      { boxNumber: [4, 2, 0], content: 'PARRLA MIRROR SOS-BİTTER' },
+      { boxNumber: [5, 2, 0], content: 'VORM. WINDMOOS' },
+      { boxNumber: [0, 0, 1], content: 'PARRLA MIRROR SOS-KIZIL' },
+      { boxNumber: [1, 0, 1], content: 'BUĞDAY KEPEĞİ' },
+      { boxNumber: [2, 0, 1], content: 'ŞOK ÖRGÜ PEYNİRİ 250 GR x 8 ADET' },
+      { boxNumber: [3, 0, 1], content: 'TARABYA 75 GR PEYNİR TOST DİLİMLİ&TELLİ PEYNİR x12 ADET' },
+    ],
+  },
+  store2: {
+    storeName: "Çerkezköy Z + 2 GÖZ",
+    shelvesY: 3,
+    shelvesZ: 8,
+    shelvesXPerRow: [18, 18, 18, 18, 18, 18, 18, 18],
+    boxData: [
+      { boxNumber: [0, 0, 0], content: 'GOLDEN KUVERTÜR BİTTER PARA (9101-C)' },
+      { boxNumber: [1, 0, 0], content: 'IREKS ARTISANO H' },
+      { boxNumber: [2, 0, 0], content: 'BAVYERA PURPUR MIX 25KG' },
+      { boxNumber: [5, 0, 0], content: 'MELLA KUVERTÜR SÜTLÜ PARA - ALT211' },
+      { boxNumber: [0, 1, 0], content: 'SPONGE CAKE MIX GF' },
+      { boxNumber: [1, 1, 0], content: 'BUĞDAY UNU PASTACILIK OVA 25 KG' },
+      { boxNumber: [2, 1, 0], content: 'SIMALTEX 15KG' },
+      { boxNumber: [3, 1, 0], content: 'SPONGE CAKE MIX GF' },
+      { boxNumber: [4, 1, 0], content: '40X30X30 EKMEKÇİLİK BASKISIZ' },
+    ],
+  },
 }
 
 // Ensure apiData is updated when dimensions or gaps are changed

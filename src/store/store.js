@@ -1,18 +1,15 @@
 import { create } from 'zustand'
-import { apiData } from './mockAPI'
+import { stores } from './mockAPI'
 
 const useStore = create((set) => ({
   // Scene configuration
-  shelvesX: apiData.shelvesX,
-  shelvesY: apiData.shelvesY,
-  shelvesZ: apiData.shelvesZ,
+  ...stores.store1, // Default to store1
   gapX: 1.51,
   gapY: 2,
-  gapZ: 7,
+  gapZ: 10,
   backGap: 1.5,
   
   // Box state
-  boxData: apiData.boxData || [],
   selectedBox: null,
 
   // Camera state
@@ -36,10 +33,12 @@ const useStore = create((set) => ({
     set({ boxData: newData })
   },
   initializeBoxData: () => {
-    set({ boxData: apiData.boxData })
+    set({ boxData: stores.store1.boxData })
   },
   setDimensions: (dimensions) => set((state) => ({ ...state, ...dimensions })),
   setGaps: (gaps) => set((state) => ({ ...state, ...gaps })),
+  setShelvesXPerRow: (shelvesXPerRow) => set({ shelvesXPerRow }),
+  switchStore: (storeKey) => set(stores[storeKey]),
 }))
 
 export default useStore

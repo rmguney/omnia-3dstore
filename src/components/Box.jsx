@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react'
 import { useCursor } from '@react-three/drei'
 
-export default function Box({ onClick, isSelected, ...props }) {
+export default function Box({ onClick, isSelected, content, boxNumber, onPointerOver, onPointerOut, ...props }) {
   const ref = useRef()
   const [hovered, setHovered] = useState(false)
   useCursor(hovered)
@@ -14,8 +14,8 @@ export default function Box({ onClick, isSelected, ...props }) {
       receiveShadow
       castShadow
       onClick={(e) => (e.stopPropagation(), onClick())}
-      onPointerOver={(e) => (e.stopPropagation(), setHovered(true))}
-      onPointerOut={() => setHovered(false)}>
+      onPointerOver={(e) => (e.stopPropagation(), setHovered(true), onPointerOver(content, boxNumber))}
+      onPointerOut={() => (setHovered(false), onPointerOut())}>
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial
         roughness={1}
