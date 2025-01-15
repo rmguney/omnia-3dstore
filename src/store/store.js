@@ -3,10 +3,10 @@ import { stores } from './mockAPI'
 
 const useStore = create((set) => ({
   // Scene configuration
-  ...stores.store1, // Default to store1
+  ...stores.store1,  // Default to store1
   gapX: 1.51,
   gapY: 2,
-  gapZ: 10,
+  gapZ: 14,
   backGap: 1.5,
   
   // Box state

@@ -3,7 +3,7 @@
 
 export const stores = {
   store1: {
-    storeName: "Çerkezköy Depo - 1",
+    storeName: "Çerkezköy - 1",
     shelvesY: 3,
     shelvesZ: 12,
     shelvesXPerRow: [16, 24, 24, 24, 14, 24, 24, 24, 14, 24, 24, 16],
@@ -31,7 +31,7 @@ export const stores = {
     ],
   },
   store2: {
-    storeName: "Çerkezköy Z + 2 GÖZ",
+    storeName: "Çerkezköy - 2",
     shelvesY: 3,
     shelvesZ: 8,
     shelvesXPerRow: [18, 18, 18, 18, 18, 18, 18, 18],

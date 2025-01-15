@@ -5,7 +5,9 @@ import { useState, useEffect } from 'react'
 import useStore from '@/store/store'
 import { stores } from '@/store/mockAPI'
 import Scene from '@/components/Scene'
-import { BsPin } from "react-icons/bs";
+import { BsPin, BsQuestionCircle, BsArrowsMove, BsMouseFill } from "react-icons/bs";
+import { FaKeyboard, FaWalking, FaUndo, FaCamera } from "react-icons/fa";
+import { PiMouseLeftClickFill, PiMouseRightClickFill, PiMouseMiddleClickFill   } from "react-icons/pi";
 
 export default function App() {
   const store = useStore()
@@ -67,6 +69,55 @@ export default function App() {
             <div className={`dot absolute left-1 top-1 bg-orange-500 w-6 h-6 rounded-full transition ${isFirstPerson ? 'transform translate-x-full' : ''}`}></div>
           </div>
           <span className="ml-3 text-white">{isFirstPerson ? 'Birinci Şahıs' : 'Yörüngesel'}</span>
+          <div className="relative group ml-4">
+            <BsQuestionCircle className="text-white hover:text-orange-500 transition-colors text-2xl cursor-help" />
+            <div className="absolute right-0 top-full mt-2 p-4 bg-white text-blue-950 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity w-72 text-sm pointer-events-none">
+              <p className="mb-3 text-lg font-bold text-center border-b pb-2">Kontrol Şeması</p>
+              
+              <div className="mb-4">
+                <p className="mb-2 font-bold flex items-center gap-2 text-orange-600">
+                  <BsMouseFill className="text-lg" /> Yörüngesel Mod
+                </p>
+                <ul className="space-y-2 ml-2">
+                  <li className="flex items-center gap-2">
+                    <PiMouseLeftClickFill /> Sol tık (Basılı): Kamera rotasyonu
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <PiMouseRightClickFill  /> Sağ tık (Basılı): Kamera kaydırma
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <PiMouseMiddleClickFill /> Mouse tekerleği: Yakınlaştırma
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <PiMouseLeftClickFill /> Sol tık (Tek): Palet seçimi
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="mb-2 font-bold flex items-center gap-2 text-orange-600">
+                  <FaWalking className="text-lg" /> Birinci Şahıs Modu
+                </p>
+                <ul className="space-y-2 ml-2">
+                  <li className="flex items-center gap-2">
+                    <FaKeyboard /> WASD / Ok Tuşları: Hareket
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <BsArrowsMove /> Mouse hareketi: Kamera kontrolü
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <PiMouseLeftClickFill /> Sol tık (Tek): Palet seçimi
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FaUndo /> R: Pozisyonu sıfırlama
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FaCamera /> Q: Birinci şahıs modundan çıkış
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </label>
       </header>
 
@@ -157,7 +208,7 @@ export default function App() {
         </div>
       )}
 
-      <Link href="/parameters" className="px-4 py-2 rounded fixed top-20 right-5 z-50 hidden lg:block">
+      <Link href="/parameters" className="px-4 py-2 rounded fixed bottom-40 right-5 z-50 hidden lg:block">
         Parametre Testi
       </Link>
     </>

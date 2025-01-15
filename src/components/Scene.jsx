@@ -2,6 +2,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PointerLockControls, OrbitControls } from '@react-three/drei'
+import { Physics, RigidBody, CapsuleCollider } from '@react-three/rapier'
 import * as THREE from 'three'
 import useStore from '@/store/store'
 import Box from './Box'
@@ -9,30 +10,70 @@ import Shelf from './Shelf'
 
 function FirstPersonCamera() {
   const { camera } = useThree()
+  const playerRef = useRef()
   const moveState = useRef({ forward: false, backward: false, left: false, right: false })
-  const speed = 0.15
+  const initialPosition = [0, 1, 5] // Store initial position for respawn
+  const speed = 4
   const direction = useRef(new THREE.Vector3())
   const frontVector = useRef(new THREE.Vector3())
   const sideVector = useRef(new THREE.Vector3())
+
+  const respawnPlayer = () => {
+    if (playerRef.current) {
+      playerRef.current.setTranslation({ x: initialPosition[0], y: initialPosition[1], z: initialPosition[2] })
+      playerRef.current.setLinvel({ x: 0, y: 0, z: 0 }) // Reset velocity
+      camera.position.set(initialPosition[0], initialPosition[1] + 2, initialPosition[2])
+    }
+  }
 
   useEffect(() => {
     camera.position.set(0, 2, 5)
 
     const handleKeyDown = (e) => {
       switch(e.code) {
-        case 'KeyW': moveState.current.forward = true; break
-        case 'KeyS': moveState.current.backward = true; break
-        case 'KeyA': moveState.current.left = true; break
-        case 'KeyD': moveState.current.right = true; break
+        case 'KeyW':
+        case 'ArrowUp': 
+          moveState.current.forward = true; 
+          break;
+        case 'KeyS':
+        case 'ArrowDown': 
+          moveState.current.backward = true; 
+          break;
+        case 'KeyA':
+        case 'ArrowLeft': 
+          moveState.current.left = true; 
+          break;
+        case 'KeyD':
+        case 'ArrowRight': 
+          moveState.current.right = true; 
+          break;
+        case 'KeyR':
+          respawnPlayer();
+          break;
+        case 'KeyQ':
+          useStore.getState().toggleCameraMode();
+          break;
       }
     }
 
     const handleKeyUp = (e) => {
       switch(e.code) {
-        case 'KeyW': moveState.current.forward = false; break
-        case 'KeyS': moveState.current.backward = false; break
-        case 'KeyA': moveState.current.left = false; break
-        case 'KeyD': moveState.current.right = false; break
+        case 'KeyW':
+        case 'ArrowUp': 
+          moveState.current.forward = false; 
+          break;
+        case 'KeyS':
+        case 'ArrowDown': 
+          moveState.current.backward = false; 
+          break;
+        case 'KeyA':
+        case 'ArrowLeft': 
+          moveState.current.left = false; 
+          break;
+        case 'KeyD':
+        case 'ArrowRight': 
+          moveState.current.right = false; 
+          break;
       }
     }
 
@@ -45,6 +86,8 @@ function FirstPersonCamera() {
   }, [camera])
 
   useFrame(() => {
+    if (!playerRef.current) return
+
     frontVector.current.set(0, 0, Number(moveState.current.backward) - Number(moveState.current.forward))
     sideVector.current.set(Number(moveState.current.left) - Number(moveState.current.right), 0, 0)
 
@@ -54,10 +97,36 @@ function FirstPersonCamera() {
       .multiplyScalar(speed)
       .applyEuler(camera.rotation)
 
-    camera.position.add(direction.current)
+    const impulse = { x: direction.current.x, y: 0, z: direction.current.z }
+    
+    // Set velocity directly instead of applying impulse for more direct control
+    playerRef.current.setLinvel({ 
+      x: direction.current.x * speed, 
+      y: playerRef.current.linvel().y, 
+      z: direction.current.z * speed 
+    })
+    
+    const playerPosition = playerRef.current.translation()
+    camera.position.set(playerPosition.x, playerPosition.y + 2, playerPosition.z)
   })
 
-  return <PointerLockControls />
+  return (
+    <>
+      <PointerLockControls />
+      <RigidBody
+        ref={playerRef}
+        position={[0, 1, 5]}
+        enabledRotations={[false, false, false]}
+        mass={1}
+        type="dynamic"
+        colliders={false}
+        linearDamping={5}
+        friction={1}
+      >
+        <CapsuleCollider args={[1, 0.5]} />
+      </RigidBody>
+    </>
+  )
 }
 
 function OrbitCamera() {
@@ -95,64 +164,98 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   const shelvesCenterX = (Math.max(...store.shelvesXPerRow) - 1) * store.gapX / 2
   const shelvesCenterZ = (store.shelvesZ - 1) * (store.gapZ + store.backGap) / 4
 
+  const wallHeight = 0.3 // Height of barrier walls
+  const wallThickness = 0.3 // Thickness of barrier walls
+
   return (
     <>
       <Canvas shadows camera={{ fov: 75 }}>
-        {store.isFirstPerson ? <FirstPersonCamera /> : <OrbitCamera />}
-        
-        <ambientLight intensity={0.9} />
-        <directionalLight
-          ref={shadowCameraRef}
-          position={[5, 15, -5]} // Adjusted position for more angle
-          intensity={2}
-          shadow-camera-far={200}
-          shadow-camera-left={-40}
-          shadow-camera-right={40}
-          shadow-camera-top={40}
-          shadow-camera-bottom={-40}
-          shadow-mapSize={[4096, 4096]}
-          shadow-bias={-0.0005}
-          castShadow
-        />
-        <directionalLight position={[-15, -15, 5]} intensity={3} /> {/* Adjusted position for more angle */}
-        <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, -0.75, 0]}>
-          <planeGeometry args={[planeWidth, planeDepth]} />
-          <meshStandardMaterial color="#172554" />
-        </mesh>
-        
-        {/* Scene objects */}
-        {Array.from({ length: store.shelvesZ }, (_, z) =>
-          Array.from({ length: store.shelvesY }, (_, y) =>
-            Array.from({ length: store.shelvesXPerRow[z] }, (_, x) => {
-              const zPosition = (z % 2 === 0 ? 0 : store.gapZ) + 
-                                Math.floor(z / 2) * (store.backGap + store.gapZ)
-              const box = store.boxData.find(box => 
-                box.boxNumber[0] === x && 
-                box.boxNumber[1] === y && 
-                box.boxNumber[2] === z
-              )
-              return (
-                <group key={`group-${x}-${y}-${z}`}>
-                  <Shelf position={[x * store.gapX - shelvesCenterX, y * store.gapY, zPosition - shelvesCenterZ]} />
-                  {box && (
-                    <Box
-                      position={[x * store.gapX - shelvesCenterX, y * store.gapY + 0.6, zPosition - shelvesCenterZ]}
-                      onClick={() => store.setSelectedBox({ x, y, z })}
-                      onPointerOver={() => handlePointerOver(box.content, box.boxNumber)}
-                      onPointerOut={handlePointerOut}
-                      content={box.content}
-                      boxNumber={box.boxNumber}
-                      isSelected={store.selectedBox && 
-                                store.selectedBox.x === x && 
-                                store.selectedBox.y === y && 
-                                store.selectedBox.z === z}
-                    />
-                  )}
-                </group>
-              )
-            })
-          )
-        )}
+        <Physics gravity={[0, -9.81, 0]}>
+          {store.isFirstPerson ? <FirstPersonCamera /> : <OrbitCamera />}
+          
+          <ambientLight intensity={0.9} />
+          <directionalLight
+            ref={shadowCameraRef}
+            position={[5, 15, -5]} // Adjusted position for more angle
+            intensity={2}
+            shadow-camera-far={200}
+            shadow-camera-left={-40}
+            shadow-camera-right={40}
+            shadow-camera-top={40}
+            shadow-camera-bottom={-40}
+            shadow-mapSize={[4096, 4096]}
+            shadow-bias={-0.0005}
+            castShadow
+          />
+          <directionalLight position={[-15, -15, 5]} intensity={3} /> {/* Adjusted position for more angle */}
+          <RigidBody type="fixed">
+            <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, -0.75, 0]}>
+              <planeGeometry args={[planeWidth, planeDepth]} />
+              <meshStandardMaterial color="#172554" />
+            </mesh>
+            
+            {/* Barrier walls */}
+            {/* Front wall */}
+            <mesh position={[0, -0.75 + wallHeight/2, planeDepth/2]}>
+              <boxGeometry args={[planeWidth, wallHeight, wallThickness]} />
+              <meshStandardMaterial color="#172554" />
+            </mesh>
+            
+            {/* Back wall */}
+            <mesh position={[0, -0.75 + wallHeight/2, -planeDepth/2]}>
+              <boxGeometry args={[planeWidth, wallHeight, wallThickness]} />
+              <meshStandardMaterial color="#172554" />
+            </mesh>
+            
+            {/* Left wall */}
+            <mesh position={[-planeWidth/2, -0.75 + wallHeight/2, 0]}>
+              <boxGeometry args={[wallThickness, wallHeight, planeDepth]} />
+              <meshStandardMaterial color="#172554" />
+            </mesh>
+            
+            {/* Right wall */}
+            <mesh position={[planeWidth/2, -0.75 + wallHeight/2, 0]}>
+              <boxGeometry args={[wallThickness, wallHeight, planeDepth]} />
+              <meshStandardMaterial color="#172554" />
+            </mesh>
+          </RigidBody>
+          
+          {/* Scene objects */}
+          {Array.from({ length: store.shelvesZ }, (_, z) =>
+            Array.from({ length: store.shelvesY }, (_, y) =>
+              Array.from({ length: store.shelvesXPerRow[z] }, (_, x) => {
+                const zPosition = (z % 2 === 0 ? 0 : store.gapZ) + 
+                                  Math.floor(z / 2) * (store.backGap + store.gapZ)
+                const box = store.boxData.find(box => 
+                  box.boxNumber[0] === x && 
+                  box.boxNumber[1] === y && 
+                  box.boxNumber[2] === z
+                )
+                return (
+                  <group key={`group-${x}-${y}-${z}`}>
+                    <RigidBody type="fixed">
+                      <Shelf position={[x * store.gapX - shelvesCenterX, y * store.gapY, zPosition - shelvesCenterZ]} />
+                    </RigidBody>
+                    {box && (
+                      <Box
+                        position={[x * store.gapX - shelvesCenterX, y * store.gapY + 0.6, zPosition - shelvesCenterZ]}
+                        onClick={() => store.setSelectedBox({ x, y, z })}
+                        onPointerOver={() => handlePointerOver(box.content, box.boxNumber)}
+                        onPointerOut={handlePointerOut}
+                        content={box.content}
+                        boxNumber={box.boxNumber}
+                        isSelected={store.selectedBox && 
+                                  store.selectedBox.x === x && 
+                                  store.selectedBox.y === y && 
+                                  store.selectedBox.z === z}
+                      />
+                    )}
+                  </group>
+                )
+              })
+            )
+          )}
+        </Physics>
       </Canvas>
       
       {store.isFirstPerson && <div className="fixed top-1/2 left-1/2 w-2.5 h-2.5 bg-orange-500 rounded-full transform -translate-x-1/2 -translate-y-1/2 z-50"></div>}
