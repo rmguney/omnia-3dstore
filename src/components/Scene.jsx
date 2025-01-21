@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import useStore from '@/store/store'
 import Box from './Box'
 import Shelf from './Shelf'
+import PillarSet from './PillarSet'
 
 function FirstPersonCamera() {
   const { camera } = useThree()
@@ -140,6 +141,31 @@ function OrbitCamera() {
   return <OrbitControls makeDefault />
 }
 
+function Pillar({ position }) {
+  const pillarWidth = 0.15  // Made thinner since we'll have two
+  const pillarDepth = 0.15  // Made thinner since we'll have two
+  const store = useStore()
+  const shelfThickness = 0.2
+  const extraHeight = -1.5
+  const totalHeight = (store.shelvesY * (store.gapY + shelfThickness)) + extraHeight
+  const groundOffset = -0.75
+
+  return (
+    <mesh 
+      position={[
+        position[0], 
+        groundOffset + (totalHeight/2),
+        position[2]
+      ]} 
+      receiveShadow 
+      castShadow
+    >
+      <boxGeometry args={[pillarWidth, totalHeight, pillarDepth]} />
+      <meshStandardMaterial roughness={1} color={'#f97316'} />
+    </mesh>
+  )
+}
+
 export default function Scene({ onPointerOver, onPointerOut }) {
   const store = useStore()
   const shadowCameraRef = useRef()
@@ -218,6 +244,16 @@ export default function Scene({ onPointerOver, onPointerOut }) {
               <boxGeometry args={[wallThickness, wallHeight, planeDepth]} />
               <meshStandardMaterial color="#172554" />
             </mesh>
+
+            {/* Replace old pillars code with PillarSet components */}
+            {Array.from({ length: store.shelvesZ }, (_, z) => (
+              <PillarSet 
+                key={`pillar-set-${z}`}
+                rowIndex={z}
+                shelvesCenterX={shelvesCenterX}
+                shelvesCenterZ={shelvesCenterZ}
+              />
+            ))}
           </RigidBody>
           
           {/* Scene objects */}
