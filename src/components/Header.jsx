@@ -2,8 +2,22 @@ import { BsQuestionCircle, BsArrowsMove, BsMouseFill } from "react-icons/bs";
 import { FaKeyboard, FaWalking, FaUndo, FaCamera } from "react-icons/fa";
 import { PiMouseLeftClickFill, PiMouseRightClickFill, PiMouseMiddleClickFill } from "react-icons/pi";
 import { stores } from '@/store/mockAPI';
+import { useState, useEffect, useRef } from 'react';
 
 export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore, handleStoreChange, isFirstPerson, toggleCameraMode }) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <header className="flex justify-between items-center p-4 bg-gradient-to-r from-[#172554] to-[#481754] text-white shadow-md fixed top-0 left-0 w-full z-50">
       <div className="flex items-center gap-4">
@@ -17,17 +31,45 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
         </button>
         <img src="/favicon.ico" alt="Favicon" className="w-8 h-8 lg:ml-4" />
       </div>
-      <select 
-        value={selectedStore} 
-        onChange={handleStoreChange} 
-        className="px-4 py-1 bg-transparent text-white hover:text-orange-500 transition-colors duration-150 font-bold text-xl rounded items-center justify-center"
-      >
-        {Object.keys(stores).map((key) => (
-          <option key={key} value={key} className="text-blue-950">
-            {stores[key].storeName}
-          </option>
-        ))}
-      </select>
+      
+      <div ref={dropdownRef} className="relative">
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="px-4 bg-transparent text-white hover:text-orange-500 transition-colors duration-150 font-bold text-xl rounded flex items-center gap-2"
+        >
+          {stores[selectedStore].storeName}
+          <svg
+            className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {isDropdownOpen && (
+          <div className="absolute top-full mt-3 w-48 rounded-md shadow-lg bg-white">
+            <div className="py-1">
+              {Object.keys(stores).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    handleStoreChange({ target: { value: key } });
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`block w-full text-center px-4 py-3 text-sm hover:bg-orange-300 transition-colors ${
+                    selectedStore === key ? 'bg-orange-400 text-white' : 'text-gray-700'
+                  }`}
+                >
+                  {stores[key].storeName}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       <label className="items-center cursor-pointer mr-3 hidden lg:flex">
         <div className="relative">
           <input 

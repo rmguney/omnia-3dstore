@@ -190,8 +190,10 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   const shelvesCenterX = (Math.max(...store.shelvesXPerRow) - 1) * store.gapX / 2
   const shelvesCenterZ = (store.shelvesZ - 1) * (store.gapZ + store.backGap) / 4
 
-  const wallHeight = 0.3 // Height of barrier walls
-  const wallThickness = 0.3 // Thickness of barrier walls
+
+  // check colliders sometime or camera height either one of them is causing an issue
+  const wallHeight = 0.5 // Height of barrier walls
+  const wallThickness = 0.5 // Thickness of barrier walls
 
   return (
     <>
