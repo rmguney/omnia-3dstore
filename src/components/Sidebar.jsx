@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import huskyLogo from '@/app/assets/husky-nav.png'
+import { IoClose } from "react-icons/io5";
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
   return (
@@ -7,12 +8,16 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
       isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
     }`} style={{ width: '300px', marginTop: '64px' }}>
       {/* Logo Box */}
-      <div className="bg-blue-950 py-3 shadow-md">
+      <div className="bg-blue-950 py-3 shadow-md relative">
+        <button 
+          onClick={() => setIsSidebarOpen(false)}
+          className="absolute right-3 top-3 text-white/80 hover:text-orange-500 transition-colors"
+        >
+          <IoClose size={20} />
+        </button>
         <div className="flex flex-col items-center justify-center gap-3">
           <a 
             href="https://parallax-login.vercel.app" 
-            target="_blank" 
-            rel="noopener noreferrer"
             className="cursor-pointer"
           >
             <Image

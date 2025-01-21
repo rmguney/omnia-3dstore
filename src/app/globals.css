@@ -9,5 +9,5 @@ body,
 }
 
 body {
-  @apply overscroll-y-none bg-gray-100 text-gray-800 antialiased;
+  @apply overscroll-y-none bg-white text-blue-950 antialiased;
 }

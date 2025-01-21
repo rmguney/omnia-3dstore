@@ -15,7 +15,22 @@ export default function App() {
   const [selectedStore, setSelectedStore] = useState('store1')
   const [hoveredBox, setHoveredBox] = useState(null)
   const [hoveredBoxNumber, setHoveredBoxNumber] = useState(null)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Initialize as false
+
+  // Initialize sidebar state based on screen size after mount
+  useEffect(() => {
+    setIsSidebarOpen(window.innerWidth >= 1024)
+  }, [])
+
+  // Handle resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSidebarOpen(window.innerWidth >= 1024)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     setIsFirstPerson(store.isFirstPerson)
