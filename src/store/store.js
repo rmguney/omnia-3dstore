@@ -6,7 +6,7 @@ const useStore = create((set) => ({
   ...stores.store1,  // Default to store1
   gapX: 1.51,
   gapY: 2,
-  gapZ: 14,
+  gapZ: 9,
   backGap: 1.5,
   
   // Box state
