@@ -15,10 +15,10 @@ export default function PinnedBox({ store }) {
           />
         </div>
         <div className="bg-[#070F2A] bg-opacity-80 rounded-lg shadow-lg p-4">
-          <div className="font-bold mb-2">
+          <div className="font-semibold text-sm mb-2">
             <span>Palet No: {store.selectedBox.x}, {store.selectedBox.y}, {store.selectedBox.z}</span>
           </div>
-          <div>
+          <div class="text-xs">
             {store.boxData.find(box => 
               box.boxNumber[0] === store.selectedBox.x && 
               box.boxNumber[1] === store.selectedBox.y && 

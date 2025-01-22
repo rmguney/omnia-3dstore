@@ -19,23 +19,23 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
   }, []);
 
   return (
-    <header className="flex justify-between items-center p-4 bg-gradient-to-r from-[#172554] to-[#481754] text-white shadow-md fixed top-0 left-0 w-full z-50">
+    <header className="flex justify-between items-center p-4 bg-gradient-to-r from-[#172554] to-[#2e1754] text-white shadow-md fixed top-0 left-0 w-full z-50">
       <div className="flex items-center gap-4">
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="text-white hover:text-orange-500 transition-colors"
+          className="text-white hover:text-orange-400 transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <img src="/favicon.ico" alt="Favicon" className="w-8 h-8 lg:ml-4" />
+        <img src="/favicon.ico" alt="Favicon" className="w-7 h-7 lg:ml-4" />
       </div>
       
       <div ref={dropdownRef} className="relative">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="px-4 bg-transparent text-white hover:text-orange-500 transition-colors duration-150 font-bold text-xl rounded flex items-center gap-2"
+          className="px-4 bg-transparent text-white hover:text-orange-400 transition-colors duration-200 font-bold text-xl rounded flex items-center gap-2 tracking-widest"
         >
           {stores[selectedStore].storeName}
           <svg
@@ -48,9 +48,12 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
           </svg>
         </button>
         
-        {isDropdownOpen && (
-          <div className="absolute top-full mt-3 w-48 rounded-md shadow-lg bg-white">
-            <div className="py-1">
+        <div className={`absolute top-full mt-4 w-48 rounded-md shadow-lg bg-[#172554] bg-opacity-95 text-white transition-all duration-300 ease-in-out transform origin-top ${
+          isDropdownOpen 
+            ? 'opacity-100 scale-100 visible translate-y-0' 
+            : 'opacity-0 scale-95 invisible -translate-y-2'
+        }`}>
+          <div className="py-1">
               {Object.keys(stores).map((key) => (
                 <button
                   key={key}
@@ -58,8 +61,8 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
                     handleStoreChange({ target: { value: key } });
                     setIsDropdownOpen(false);
                   }}
-                  className={`block w-full text-center px-4 py-3 text-sm hover:bg-orange-300 transition-colors ${
-                    selectedStore === key ? 'bg-orange-400 text-white' : 'text-gray-700'
+                  className={`block w-full text-center p-2 text-sm font-semibold tracking-wider hover:text-orange border-2 border-transparent rounded-md hover:text-orange-300 transition-colors duration-300 ${
+                    selectedStore === key ? 'border-orange-500 text-orange-500' : 'text-white'
                   }`}
                 >
                   {stores[key].storeName}
@@ -67,7 +70,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
               ))}
             </div>
           </div>
-        )}
       </div>
 
       <label className="items-center cursor-pointer mr-3 hidden lg:flex">
@@ -78,13 +80,15 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
             onChange={toggleCameraMode} 
             className="sr-only"
           />
-          <div className="block bg-transparent border-2 border-white w-14 h-8 rounded-full"></div>
-          <div className={`dot absolute left-1 top-1 bg-orange-500 hover:bg-orange-600 w-6 h-6 rounded-full transition ${isFirstPerson ? 'transform translate-x-full' : ''}`}></div>
+          <div className="block bg-transparent border-2 border-white w-12 h-7 rounded-full"></div>
+          <div className={`dot absolute left-1 top-1 bg-orange-500 hover:bg-orange-400 w-5 h-5 rounded-full transition ${isFirstPerson ? 'transform translate-x-full' : ''}`}></div>
         </div>
-        <span className="ml-3 text-white">{isFirstPerson ? 'Birinci Şahıs' : 'Yörüngesel'}</span>
+        <span className="ml-3 text-white text-sm">{isFirstPerson ? 'Birinci Şahıs' : 'Yörüngesel'}</span>
         <div className="relative group ml-4">
-          <BsQuestionCircle className="text-white hover:text-orange-500 transition-colors text-2xl cursor-help" />
-          <div className="absolute right-0 top-full mt-2 p-4 bg-white text-blue-950 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity w-72 text-sm pointer-events-none">
+          <BsQuestionCircle className="text-white hover:text-orange-500 transition-colors cursor-help size-6" />
+          <div className="absolute right-0 top-full mt-2 p-4 bg-white text-blue-950 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform origin-top-right pointer-events-none
+            group-hover:opacity-100 group-hover:scale-100 group-hover:visible group-hover:translate-y-0
+            opacity-0 scale-95 invisible -translate-y-2 w-72 text-sm">
             <p className="mb-3 text-lg font-bold text-center border-b pb-2">Kontrol Şeması</p>
             
             <div className="mb-4">

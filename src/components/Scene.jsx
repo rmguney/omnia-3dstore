@@ -239,7 +239,7 @@ function OrbitCamera({ planeWidth, planeDepth }) {
   const minY = 2
 
   useEffect(() => {
-    camera.position.set(15, 15, 15)
+    camera.position.set(25, 11, 9)  // Initial orbit camera position on page load: x=15, y=15, z=15
     camera.lookAt(0, 0, 0)
   }, [camera])
 
@@ -283,6 +283,42 @@ function OrbitCamera({ planeWidth, planeDepth }) {
       }}
     />
   )
+}
+
+function GroundBorder({ width, depth }) {
+  const borderThickness = 1.00; // Adjust this value to change border thickness
+  const shape = useMemo(() => {
+    const shape = new THREE.Shape();
+    // Outer rectangle
+    shape.moveTo(-width/2 - borderThickness, -depth/2 - borderThickness);
+    shape.lineTo(width/2 + borderThickness, -depth/2 - borderThickness);
+    shape.lineTo(width/2 + borderThickness, depth/2 + borderThickness);
+    shape.lineTo(-width/2 - borderThickness, depth/2 + borderThickness);
+    shape.lineTo(-width/2 - borderThickness, -depth/2 - borderThickness);
+
+    // Inner hole
+    const hole = new THREE.Path();
+    hole.moveTo(-width/2, -depth/2);
+    hole.lineTo(width/2, -depth/2);
+    hole.lineTo(width/2, depth/2);
+    hole.lineTo(-width/2, depth/2);
+    hole.lineTo(-width/2, -depth/2);
+    shape.holes.push(hole);
+
+    return shape;
+  }, [width, depth]);
+
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[0, -0.745, 0]}>
+      <shapeGeometry args={[shape]} />
+      <meshStandardMaterial 
+        color="#ea580c"
+        roughness={1}
+        metalness={0}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
 }
 
 export default function Scene({ onPointerOver, onPointerOut }) {
@@ -344,6 +380,8 @@ export default function Scene({ onPointerOver, onPointerOut }) {
               <planeGeometry args={[planeWidth, planeDepth]} />
               <meshStandardMaterial color="#172554" />
             </mesh>
+
+            <GroundBorder width={planeWidth} depth={planeDepth} />
 
             {Array.from({ length: store.shelvesZ }, (_, z) => (
               <PillarSet 
