@@ -1,15 +1,97 @@
 'use client'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PointerLockControls, OrbitControls } from '@react-three/drei'
-import { Physics, RigidBody, CapsuleCollider } from '@react-three/rapier'
+import { Physics, RigidBody, CapsuleCollider, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
 import useStore from '@/store/store'
 import Box from './Box'
 import Shelf from './Shelf'
 import PillarSet from './PillarSet'
 
-function FirstPersonCamera() {
+function DomeEnvironment({ width, depth }) {
+  const radius = Math.max(width, depth) * 6
+  const segments = 32  // Back to more segments for lines
+  const rings = 16    // Back to more rings for lines
+  const gridStep = 2   // Draw more lines (every 2nd line)
+  const groundColor = "#172554"
+
+  const gridLines = useMemo(() => {
+    const lines = []
+    
+    // Longitude lines
+    for (let i = 0; i < segments; i += gridStep) {
+      const angle = (i / segments) * Math.PI * 2
+      const points = []
+      for (let j = 0; j <= rings; j++) {  // Use all points for smoother lines
+        const phi = (j / rings) * (Math.PI / 2)
+        const x = radius * Math.cos(angle) * Math.cos(phi)
+        const y = radius * Math.sin(phi)
+        const z = radius * Math.sin(angle) * Math.cos(phi)
+        points.push(new THREE.Vector3(x, y, z))
+      }
+      lines.push(points)
+    }
+    
+    // Latitude lines
+    for (let j = gridStep; j < rings; j += gridStep) {
+      const phi = (j / rings) * (Math.PI / 2)
+      const points = []
+      for (let i = 0; i <= segments; i++) {  // Use all points for smoother lines
+        const angle = (i / segments) * Math.PI * 2
+        const x = radius * Math.cos(angle) * Math.cos(phi)
+        const y = radius * Math.sin(phi)
+        const z = radius * Math.sin(angle) * Math.cos(phi)
+        points.push(new THREE.Vector3(x, y, z))
+      }
+      lines.push(points)
+    }
+    
+    return lines
+  }, [radius, segments])
+
+  // Create ground circle
+  const groundGeometry = useMemo(() => {
+    return new THREE.CircleGeometry(radius, segments)
+  }, [radius, segments])
+
+  return (
+    <group position={[0, -0.75, 0]}>
+      <group>
+        {gridLines.map((points, i) => (
+          <line key={i}>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                count={points.length}
+                array={new Float32Array(points.flatMap(p => [p.x, p.y, p.z]))}
+                itemSize={3}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial 
+              color="gray" 
+              opacity={0.3} 
+              transparent 
+              depthWrite={false}
+              linewidth={1}
+            />
+          </line>
+        ))}
+      </group>
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.002, 0]}>
+        <primitive object={groundGeometry} />
+        <meshStandardMaterial 
+          color={groundColor} 
+          opacity={1} 
+          transparent={false}
+          roughness={1}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function FirstPersonCamera({ planeWidth, planeDepth }) {
   const { camera } = useThree()
   const playerRef = useRef()
   const moveState = useRef({ forward: false, backward: false, left: false, right: false })
@@ -89,6 +171,7 @@ function FirstPersonCamera() {
   useFrame(() => {
     if (!playerRef.current) return
 
+    // Calculate movement direction
     frontVector.current.set(0, 0, Number(moveState.current.backward) - Number(moveState.current.forward))
     sideVector.current.set(Number(moveState.current.left) - Number(moveState.current.right), 0, 0)
 
@@ -98,22 +181,41 @@ function FirstPersonCamera() {
       .multiplyScalar(speed)
       .applyEuler(camera.rotation)
 
-    const impulse = { x: direction.current.x, y: 0, z: direction.current.z }
+    const radius = Math.max(planeWidth, planeDepth) * 0.95
+    const playerPos = playerRef.current.translation()
     
-    // Set velocity directly instead of applying impulse for more direct control
-    playerRef.current.setLinvel({ 
-      x: direction.current.x * speed, 
-      y: playerRef.current.linvel().y, 
-      z: direction.current.z * speed 
-    })
+    // Calculate next position
+    const nextX = playerPos.x + direction.current.x * speed * 0.016
+    const nextZ = playerPos.z + direction.current.z * speed * 0.016
+    const distanceFromCenter = Math.sqrt(nextX ** 2 + nextZ ** 2)
+
+    // Apply movement with boundary check
+    if (distanceFromCenter < radius) {
+      playerRef.current.setLinvel({ 
+        x: direction.current.x * speed, 
+        y: playerRef.current.linvel().y, 
+        z: direction.current.z * speed 
+      })
+    } else {
+      // If at boundary, allow sliding along it
+      const angle = Math.atan2(playerPos.z, playerPos.x)
+      const tangentX = -Math.sin(angle)
+      const tangentZ = Math.cos(angle)
+      const dot = direction.current.x * tangentX + direction.current.z * tangentZ
+      playerRef.current.setLinvel({
+        x: tangentX * dot * speed,
+        y: playerRef.current.linvel().y,
+        z: tangentZ * dot * speed
+      })
+    }
     
-    const playerPosition = playerRef.current.translation()
-    camera.position.set(playerPosition.x, playerPosition.y + 2, playerPosition.z)
+    const currentPos = playerRef.current.translation()
+    camera.position.set(currentPos.x, currentPos.y + 2, currentPos.z)
   })
 
   return (
     <>
-      <PointerLockControls />
+      <PointerLockControls makeDefault />
       <RigidBody
         ref={playerRef}
         position={[0, 1, 5]}
@@ -130,39 +232,56 @@ function FirstPersonCamera() {
   )
 }
 
-function OrbitCamera() {
+function OrbitCamera({ planeWidth, planeDepth }) {
   const { camera } = useThree()
-  
+  const radius = Math.max(planeWidth, planeDepth) * 0.95
+  const controlsRef = useRef()
+  const minY = 2
+
   useEffect(() => {
     camera.position.set(15, 15, 15)
     camera.lookAt(0, 0, 0)
   }, [camera])
 
-  return <OrbitControls makeDefault />
-}
-
-function Pillar({ position }) {
-  const pillarWidth = 0.15  // Made thinner since we'll have two
-  const pillarDepth = 0.15  // Made thinner since we'll have two
-  const store = useStore()
-  const shelfThickness = 0.2
-  const extraHeight = -1.5
-  const totalHeight = (store.shelvesY * (store.gapY + shelfThickness)) + extraHeight
-  const groundOffset = -0.75
-
   return (
-    <mesh 
-      position={[
-        position[0], 
-        groundOffset + (totalHeight/2),
-        position[2]
-      ]} 
-      receiveShadow 
-      castShadow
-    >
-      <boxGeometry args={[pillarWidth, totalHeight, pillarDepth]} />
-      <meshStandardMaterial roughness={1} color={'#f97316'} />
-    </mesh>
+    <OrbitControls 
+      ref={controlsRef}
+      makeDefault
+      maxPolarAngle={Math.PI / 2 - 0.1}
+      minPolarAngle={0.1}
+      maxDistance={radius}
+      minDistance={2}
+      enableRotate={true}
+      rotateSpeed={0.5}
+      enablePan={true}
+      panSpeed={0.5}
+      onChange={(e) => {
+        const pos = e.target.object.position
+        const distanceFromCenter = Math.sqrt(pos.x * pos.x + pos.z * pos.z)
+
+        // Handle height constraint
+        if (pos.y < minY) {
+          pos.y = minY
+        }
+
+        // Handle radius constraint with immediate correction
+        if (distanceFromCenter > radius) {
+          const scale = radius / distanceFromCenter
+          pos.x *= scale
+          pos.z *= scale
+          // Update target to maintain look direction
+          if (controlsRef.current) {
+            const target = controlsRef.current.target
+            const targetDist = Math.sqrt(target.x * target.x + target.z * target.z)
+            if (targetDist > radius) {
+              const targetScale = radius / targetDist
+              target.x *= targetScale
+              target.z *= targetScale
+            }
+          }
+        }
+      }}
+    />
   )
 }
 
@@ -190,21 +309,25 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   const shelvesCenterX = (Math.max(...store.shelvesXPerRow) - 1) * store.gapX / 2
   const shelvesCenterZ = (store.shelvesZ - 1) * (store.gapZ + store.backGap) / 4
 
-
-  // check colliders sometime or camera height either one of them is causing an issue
-  const wallHeight = 0.5 // Height of barrier walls
-  const wallThickness = 0.5 // Thickness of barrier walls
+  const domeRadius = Math.max(planeWidth, planeDepth) * 5  // Match DomeEnvironment radius calculation
 
   return (
     <>
       <Canvas shadows camera={{ fov: 75 }}>
         <Physics gravity={[0, -9.81, 0]}>
-          {store.isFirstPerson ? <FirstPersonCamera /> : <OrbitCamera />}
+          {store.isFirstPerson ? <FirstPersonCamera planeWidth={planeWidth} planeDepth={planeDepth} /> : <OrbitCamera planeWidth={planeWidth} planeDepth={planeDepth} />}
+          
+          {/* Ground collider sized to match dome */}
+          <RigidBody type="fixed" position={[0, -0.75, 0]}>
+            <CuboidCollider args={[domeRadius, 0.1, domeRadius]} position={[0, 0, 0]} />
+          </RigidBody>
+
+          <DomeEnvironment width={planeWidth} depth={planeDepth} />
           
           <ambientLight intensity={0.9} />
           <directionalLight
             ref={shadowCameraRef}
-            position={[5, 15, -5]} // Adjusted position for more angle
+            position={[5, 15, -5]}
             intensity={2}
             shadow-camera-far={200}
             shadow-camera-left={-40}
@@ -215,39 +338,13 @@ export default function Scene({ onPointerOver, onPointerOut }) {
             shadow-bias={-0.0005}
             castShadow
           />
-          <directionalLight position={[-15, -15, 5]} intensity={3} /> {/* Adjusted position for more angle */}
+          <directionalLight position={[-15, -15, 5]} intensity={3} />
           <RigidBody type="fixed">
             <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, -0.75, 0]}>
               <planeGeometry args={[planeWidth, planeDepth]} />
               <meshStandardMaterial color="#172554" />
             </mesh>
-            
-            {/* Barrier walls */}
-            {/* Front wall */}
-            <mesh position={[0, -0.75 + wallHeight/2, planeDepth/2]}>
-              <boxGeometry args={[planeWidth, wallHeight, wallThickness]} />
-              <meshStandardMaterial color="#172554" />
-            </mesh>
-            
-            {/* Back wall */}
-            <mesh position={[0, -0.75 + wallHeight/2, -planeDepth/2]}>
-              <boxGeometry args={[planeWidth, wallHeight, wallThickness]} />
-              <meshStandardMaterial color="#172554" />
-            </mesh>
-            
-            {/* Left wall */}
-            <mesh position={[-planeWidth/2, -0.75 + wallHeight/2, 0]}>
-              <boxGeometry args={[wallThickness, wallHeight, planeDepth]} />
-              <meshStandardMaterial color="#172554" />
-            </mesh>
-            
-            {/* Right wall */}
-            <mesh position={[planeWidth/2, -0.75 + wallHeight/2, 0]}>
-              <boxGeometry args={[wallThickness, wallHeight, planeDepth]} />
-              <meshStandardMaterial color="#172554" />
-            </mesh>
 
-            {/* Replace old pillars code with PillarSet components */}
             {Array.from({ length: store.shelvesZ }, (_, z) => (
               <PillarSet 
                 key={`pillar-set-${z}`}
