@@ -29,11 +29,11 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
               priority
             />
           </a>
-          <h3 className="text-white font-bold text-md">Bu Depodaki Tüm Ürünleriniz</h3>
+          <h3 className="text-white font-bold text-md">Bu Depodaki Tüm Ürünler</h3>
         </div>
       </div>
 
-      <div className="p-3 lg:pr-0">
+      <div className="p-3 lg:pr-1">
         <div className="overflow-y-auto" style={{ height: 'calc(85vh - 120px)' }}>
           {store.boxData?.map((box, index) => (
             <div 

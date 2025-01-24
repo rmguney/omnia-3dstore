@@ -87,8 +87,10 @@ export default function App() {
 
       <PinnedBox store={store} />
 
-      <Link href="/parameters" className="px-4 py-2 rounded fixed bottom-5 right-5 z-30 hidden xl:block">
+      <Link href="/parameters" className="px-4 py-2 rounded fixed bottom-5 right-5 z-30 hidden xl:block text-gray-700">
         Parametre Testi
+        <br/>
+        <small>Dev Beta 0.1.0</small>
       </Link>
     </>
   )
