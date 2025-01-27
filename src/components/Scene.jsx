@@ -259,7 +259,7 @@ function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ })
 
   // Add frame loop for smooth animation
   useFrame(() => {
-    if (animating.current && controlsRef.current) {
+    if (animating.current && controlsRef.current && !userInteracting.current) {
       const SMOOTH_FACTOR = 0.05; // Adjust this value to change animation speed
       const DISTANCE_THRESHOLD = 0.01;
 
@@ -361,6 +361,10 @@ function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ })
     }
   }, [focusedBox, store, shelvesCenterX, shelvesCenterZ, scene])
 
+  // Add user interaction state
+  const userInteracting = useRef(false)
+
+  // Update OrbitControls return
   return (
     <OrbitControls 
       ref={controlsRef}
@@ -373,6 +377,14 @@ function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ })
       rotateSpeed={0.5}
       enablePan={true}
       panSpeed={0.5}
+      onStart={() => {
+        userInteracting.current = true;
+        store.clearFocusedBox();  // Clear focused box when user starts interacting
+        animating.current = false;
+      }}
+      onEnd={() => {
+        userInteracting.current = false;
+      }}
       onChange={(e) => {
         const pos = e.target.object.position
         const distanceFromCenter = Math.sqrt(pos.x * pos.x + pos.z * pos.z)
