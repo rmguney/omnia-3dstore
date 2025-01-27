@@ -2,15 +2,32 @@ import { create } from 'zustand'
 import { stores } from './mockAPI'
 import { generateTempBoxData } from '../utils/tempBoxPopulator'
 
-// populator version
+// Define store-specific configurations
+const storeConfigs = {
+  store1: {
+    gapX: 1.51,
+    gapY: 2,
+    gapZ: 9,
+    backGap: 1.5,
+  },
+  store2: {
+    gapX: 1.51,
+    gapY: 2,
+    gapZ: 9,
+    backGap: 1.5,
+  },
+  store3: {
+    gapX: 1.51,
+    gapY: 2,
+    gapZ: 1.51,
+    backGap: 1.51,
+  }
+}
 
 const useStore = create((set) => ({
   // Scene configuration
   ...stores.store1,  // Default to store1
-  gapX: 1.51,
-  gapY: 2,
-  gapZ: 9,
-  backGap: 1.5,
+  ...storeConfigs.store1,  // Default gaps for store1
   
   // Box state
   selectedBox: null,
@@ -39,10 +56,19 @@ const useStore = create((set) => ({
   // Add storage for each store's box data
   store1BoxData: null,
   store2BoxData: null,
+  store3BoxData: null,
 
   initializeBoxData: () => {
     const currentState = useStore.getState();
-    const storeKey = currentState.storeName.includes('1') ? 'store1BoxData' : 'store2BoxData';
+    let storeKey;
+    
+    if (currentState.storeName.includes('1')) {
+      storeKey = 'store1BoxData';
+    } else if (currentState.storeName.includes('2')) {
+      storeKey = 'store2BoxData';
+    } else {
+      storeKey = 'store3BoxData';
+    }
     
     // Only generate if not already initialized
     if (!currentState[storeKey]) {
@@ -66,15 +92,24 @@ const useStore = create((set) => ({
   setShelvesXPerRow: (shelvesXPerRow) => set({ shelvesXPerRow }),
   switchStore: (storeKey) => {
     const currentState = useStore.getState();
-    // Save current box data to appropriate store
-    const currentStoreKey = currentState.storeName.includes('1') ? 'store1BoxData' : 'store2BoxData';
+    // Determine current store key
+    let currentStoreKey;
+    if (currentState.storeName.includes('1')) {
+      currentStoreKey = 'store1BoxData';
+    } else if (currentState.storeName.includes('2')) {
+      currentStoreKey = 'store2BoxData';
+    } else {
+      currentStoreKey = 'store3BoxData';
+    }
+    
     const updatedState = {
       ...stores[storeKey],
+      ...storeConfigs[storeKey],  // Apply store-specific gaps
       [currentStoreKey]: currentState.boxData
     };
     
     // Set the box data for the new store
-    const newStoreKey = storeKey === 'store1' ? 'store1BoxData' : 'store2BoxData';
+    const newStoreKey = `${storeKey}BoxData`;
     updatedState.boxData = currentState[newStoreKey] || null;
     
     set(updatedState);

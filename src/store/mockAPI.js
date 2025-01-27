@@ -56,6 +56,15 @@ export const stores = {
 
     ],
   },
+  store3: {
+    storeName: "Ferrero Demo",
+    shelvesY: 5,
+    shelvesZ: 12,
+    shelvesXPerRow: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
+    boxData: [
+      { boxNumber: [0, 0, 0], content: 'GOLDEN KUVERTÜR BİTTER PARA (9101-C)' },
+    ],
+  },
 }
 
 // Ensure apiData is updated when dimensions or gaps are changed
