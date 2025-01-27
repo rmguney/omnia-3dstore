@@ -1,9 +1,21 @@
 import Image from 'next/image'
 import huskyLogo from '@/app/assets/husky-nav.png'
-import { IoClose } from "react-icons/io5";
-import useStore from '@/store/store'  // Add this import
+import { IoClose, IoSearch } from "react-icons/io5"  // Add IoSearch import
+import useStore from '@/store/store'
+import { useState, useMemo } from 'react'  // Add useState and useMemo
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Filter boxes based on search query
+  const filteredBoxes = useMemo(() => {
+    if (!searchQuery.trim() || !store.boxData) return store.boxData;
+    
+    return store.boxData.filter(box => 
+      box.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [store.boxData, searchQuery]);
+
   return (
     <div className={`fixed top-0 -left-0.5 h-full bg-white shadow-xl z-40 transition-transform duration-300 transform ${
       isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -35,8 +47,23 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
       </div>
 
       <div className="p-3 lg:pr-1">
+        {/* Add Search Bar */}
+        <div className="mb-3 relative">
+          <input
+            type="text"
+            placeholder="Ürün arama"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-3 py-1 bg-gray-100 border border-gray-200 text-sm rounded-lg 
+                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                     pr-10"
+          />
+          <IoSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+        </div>
+
+        {/* Update box list to use filtered results */}
         <div className="overflow-y-auto" style={{ height: 'calc(85vh - 120px)' }}>
-          {store.boxData?.map((box, index) => (
+          {filteredBoxes?.map((box, index) => (
             <div 
               key={index}
               className={`p-1 mb-1 rounded cursor-pointer transition-colors text-sm ${
@@ -70,6 +97,12 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
               </div>
             </div>
           ))}
+          
+          {filteredBoxes?.length === 0 && searchQuery && (
+            <div className="text-center text-gray-500 mt-4">
+              Aradığınız ürün bulunamadı
+            </div>
+          )}
         </div>
       </div>
     </div>
