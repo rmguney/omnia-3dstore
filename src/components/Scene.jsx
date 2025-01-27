@@ -451,6 +451,8 @@ function GroundBorder({ width, depth }) {
   );
 }
 
+// ...existing code...
+
 export default function Scene({ onPointerOver, onPointerOut }) {
   const store = useStore()
   const shadowCameraRef = useRef()
@@ -468,14 +470,17 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   const handlePointerOut = () => {
     onPointerOut && onPointerOut()
   }
-  const widthOffset= 30;
-  const depthOffset= -10;
-  const planeWidth = Math.max(...store.shelvesXPerRow) * store.gapX + widthOffset
-  const planeDepth = store.shelvesZ * store.gapZ + (Math.floor(store.shelvesZ / 2) * store.backGap) + depthOffset
-  const shelvesCenterX = (Math.max(...store.shelvesXPerRow) - 1) * store.gapX / 2
-  const shelvesCenterZ = (store.shelvesZ - 1) * (store.gapZ + store.backGap) / 4
+  const widthOffset = 30;
+  const depthOffset = store.storeName.includes('Ferrero') ? 30 : -10; // Adjust offset based on store
+  
+  const planeWidth = Math.max(...store.shelvesXPerRow) * store.gapX + widthOffset;
+  const planeDepth = store.shelvesZ * (store.gapZ + store.backGap/2) + depthOffset;
+  
+  // Update center calculations for consistent positioning
+  const shelvesCenterX = (Math.max(...store.shelvesXPerRow) - 1) * store.gapX / 2;
+  const shelvesCenterZ = store.shelvesZ * (store.gapZ + store.backGap/2) / 4;
 
-  const domeRadius = Math.max(planeWidth, planeDepth) * 5  // Match DomeEnvironment radius calculation
+  const domeRadius = Math.max(planeWidth, planeDepth) * 5;
 
   return (
     <>
