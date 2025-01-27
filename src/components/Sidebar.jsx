@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import huskyLogo from '@/app/assets/husky-nav.png'
 import { IoClose } from "react-icons/io5";
+import useStore from '@/store/store'  // Add this import
 
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
   return (
@@ -52,18 +53,21 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                   y: box.boxNumber[1],
                   z: box.boxNumber[2]
                 });
+                store.setFocusedBox(box.boxNumber);
                 if (window.innerWidth < 1024) setIsSidebarOpen(false);
               }}
             >
-              <div className="font-medium">Palet {box.boxNumber.join(', ')}</div>
-              <div className={`text-xs ${
-                store.selectedBox &&
-                store.selectedBox.x === box.boxNumber[0] &&
-                store.selectedBox.y === box.boxNumber[1] &&
-                store.selectedBox.z === box.boxNumber[2]
-                  ? 'text-neutral-50'
-                  : 'text-neutral-600'
-              }`}>{box.content}</div>
+              <div className="cursor-pointer p-2 rounded">
+                <div className="font-medium">Palet {box.boxNumber.join(', ')}</div>
+                <div className={`text-xs ${
+                  store.selectedBox &&
+                  store.selectedBox.x === box.boxNumber[0] &&
+                  store.selectedBox.y === box.boxNumber[1] &&
+                  store.selectedBox.z === box.boxNumber[2]
+                    ? 'text-neutral-50'
+                    : 'text-neutral-600'
+                }`}>{box.content}</div>
+              </div>
             </div>
           ))}
         </div>

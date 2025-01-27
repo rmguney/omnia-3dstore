@@ -84,6 +84,26 @@ const useStore = create((set) => ({
       useStore.getState().initializeBoxData();
     }
   },
+
+  // Add new state for focused box
+  focusedBox: null,
+  
+  // Add method to set focused box
+  setFocusedBox: (boxNumber) => {
+    const state = useStore.getState();
+    const box = state.boxData.find(b => 
+      b.boxNumber[0] === boxNumber[0] && 
+      b.boxNumber[1] === boxNumber[1] && 
+      b.boxNumber[2] === boxNumber[2]
+    );
+    set({ 
+      focusedBox: box,
+      selectedBox: { x: boxNumber[0], y: boxNumber[1], z: boxNumber[2] }
+    });
+  },
+  
+  // Add method to clear focused box
+  clearFocusedBox: () => set({ focusedBox: null }),
 }))
 
 export default useStore

@@ -232,16 +232,134 @@ function FirstPersonCamera({ planeWidth, planeDepth }) {
   )
 }
 
-function OrbitCamera({ planeWidth, planeDepth }) {
-  const { camera } = useThree()
+function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ }) {  // Add these props
+  const { camera, scene } = useThree()  // Add scene to useThree
   const radius = Math.max(planeWidth, planeDepth) * 0.95
   const controlsRef = useRef()
   const minY = 2
+  const focusedBox = useStore(state => state.focusedBox)
+  const store = useStore()  // Add this to access store values
+
+  // Add refs for animation
+  const animating = useRef(false)
+  const targetCameraPos = useRef(new THREE.Vector3())
+  const targetLookAt = useRef(new THREE.Vector3())
+  const currentLookAt = useRef(new THREE.Vector3())
+
+  // Add lerp helper function
+  const lerp = (start, end, factor) => start + (end - start) * factor;
+
+  // Add function to smoothly move camera
+  const smoothMoveCamera = (targetPos, lookAtPos) => {
+    animating.current = true;
+    targetCameraPos.current.copy(targetPos);
+    targetLookAt.current.copy(lookAtPos);
+    currentLookAt.current.copy(controlsRef.current.target);
+  };
+
+  // Add frame loop for smooth animation
+  useFrame(() => {
+    if (animating.current && controlsRef.current) {
+      const SMOOTH_FACTOR = 0.05; // Adjust this value to change animation speed
+      const DISTANCE_THRESHOLD = 0.01;
+
+      // Update camera position
+      const newX = lerp(camera.position.x, targetCameraPos.current.x, SMOOTH_FACTOR);
+      const newY = lerp(camera.position.y, targetCameraPos.current.y, SMOOTH_FACTOR);
+      const newZ = lerp(camera.position.z, targetCameraPos.current.z, SMOOTH_FACTOR);
+      camera.position.set(newX, newY, newZ);
+
+      // Update look at target
+      const newLookAtX = lerp(currentLookAt.current.x, targetLookAt.current.x, SMOOTH_FACTOR);
+      const newLookAtY = lerp(currentLookAt.current.y, targetLookAt.current.y, SMOOTH_FACTOR);
+      const newLookAtZ = lerp(currentLookAt.current.z, targetLookAt.current.z, SMOOTH_FACTOR);
+      currentLookAt.current.set(newLookAtX, newLookAtY, newLookAtZ);
+      controlsRef.current.target.copy(currentLookAt.current);
+
+      // Check if we're close enough to stop animation
+      const positionDistance = camera.position.distanceTo(targetCameraPos.current);
+      const targetDistance = currentLookAt.current.distanceTo(targetLookAt.current);
+      
+      if (positionDistance < DISTANCE_THRESHOLD && targetDistance < DISTANCE_THRESHOLD) {
+        animating.current = false;
+      }
+
+      controlsRef.current.update();
+    }
+  });
 
   useEffect(() => {
     camera.position.set(25, 11, 9)  // Initial orbit camera position on page load: x=15, y=15, z=15
     camera.lookAt(0, 0, 0)
   }, [camera])
+
+  // Add function to find best camera position
+  const findBestCameraPosition = (targetPos) => {
+    const angles = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4]
+    const distances = [5, 7, 9, 11]  // Try different distances
+    const heights = [3, 4, 5, 6]     // Try different heights
+    
+    // Create raycaster
+    const raycaster = new THREE.Raycaster()
+    const targetVector = new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z)
+    
+    // Try all combinations to find clear line of sight
+    for (let distance of distances) {
+      for (let height of heights) {
+        for (let angle of angles) {
+          // Calculate potential camera position
+          const x = targetPos.x + distance * Math.cos(angle)
+          const y = targetPos.y + height
+          const z = targetPos.z + distance * Math.sin(angle)
+          const cameraPos = new THREE.Vector3(x, y, z)
+          
+          // Set up raycaster
+          const direction = new THREE.Vector3()
+          direction.subVectors(targetVector, cameraPos).normalize()
+          raycaster.set(cameraPos, direction)
+          
+          // Check for intersections
+          const intersects = raycaster.intersectObjects(scene.children, true)
+          
+          // If no intersections or first intersection is our target, this position is good
+          if (intersects.length === 0 || 
+              (intersects[0].point.distanceTo(targetVector) < 1)) {
+            return { position: cameraPos, found: true }
+          }
+        }
+      }
+    }
+    
+    // If no clear view found, return the default offset position
+    return {
+      position: new THREE.Vector3(
+        targetPos.x + 5,
+        targetPos.y + 3,
+        targetPos.z + 5
+      ),
+      found: false
+    }
+  }
+
+  // Update focus animation with new camera positioning
+  useEffect(() => {
+    if (focusedBox && controlsRef.current) {
+      const x = focusedBox.boxNumber[0] * store.gapX - shelvesCenterX
+      const y = focusedBox.boxNumber[1] * store.gapY + 1
+      const z = (focusedBox.boxNumber[2] % 2 === 0 ? 0 : store.gapZ) + 
+                Math.floor(focusedBox.boxNumber[2] / 2) * (store.backGap + store.gapZ) - 
+                shelvesCenterZ
+
+      const targetPos = { x, y, z }
+      const { position: cameraPos } = findBestCameraPosition(targetPos)
+
+      // Use smooth movement instead of immediate position change
+      smoothMoveCamera(
+        cameraPos,
+        new THREE.Vector3(x, y, z)
+      );
+    }
+  }, [focusedBox, store, shelvesCenterX, shelvesCenterZ, scene])
 
   return (
     <OrbitControls 
@@ -351,7 +469,15 @@ export default function Scene({ onPointerOver, onPointerOut }) {
     <>
       <Canvas shadows camera={{ fov: 75 }}>
         <Physics gravity={[0, -9.81, 0]}>
-          {store.isFirstPerson ? <FirstPersonCamera planeWidth={planeWidth} planeDepth={planeDepth} /> : <OrbitCamera planeWidth={planeWidth} planeDepth={planeDepth} />}
+          {store.isFirstPerson ? 
+            <FirstPersonCamera planeWidth={planeWidth} planeDepth={planeDepth} /> : 
+            <OrbitCamera 
+              planeWidth={planeWidth} 
+              planeDepth={planeDepth}
+              shelvesCenterX={shelvesCenterX}
+              shelvesCenterZ={shelvesCenterZ}
+            />
+          }
           
           {/* Ground collider sized to match dome */}
           <RigidBody type="fixed" position={[0, -0.75, 0]}>
