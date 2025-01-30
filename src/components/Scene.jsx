@@ -414,7 +414,7 @@ function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ })
   )
 }
 
-function GroundBorder({ width, depth }) {
+function GroundBorder({ width, depth, position }) {
   const borderThickness = 1.00; // border thickness
   const shape = useMemo(() => {
     const shape = new THREE.Shape();
@@ -438,7 +438,7 @@ function GroundBorder({ width, depth }) {
   }, [width, depth]);
 
   return (
-    <mesh rotation-x={-Math.PI / 2} position={[0, -0.745, 0]}>
+    <mesh rotation-x={-Math.PI / 2} position={position}>
       <shapeGeometry args={[shape]} />
       <meshStandardMaterial 
         color="#ea580c"
@@ -470,25 +470,33 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   
   // Update plane calculations to properly account for shelf positions
   const calculatePlaneDimensions = () => {
+    const shelfWidth = Math.max(...store.shelvesXPerRow) * store.gapX;
+    const totalWidth = shelfWidth + store.widthOffsetStart + store.widthOffsetEnd;
+    
     if (store.archetype === 'drive') {
+      const totalDepth = store.shelvesZ * store.gapZ + store.depthOffsetStart + store.depthOffsetEnd;
       return {
-        width: Math.max(...store.shelvesXPerRow) * store.gapX + store.widthOffset,
-        depth: store.shelvesZ * store.gapZ + store.depthOffset
+        width: totalWidth,
+        depth: totalDepth,
+        // Add offset positions for centering
+        offsetX: (store.widthOffsetEnd - store.widthOffsetStart) / 2,
+        offsetZ: (store.depthOffsetEnd - store.depthOffsetStart) / 2
       };
     } else {
-      // For back-to-back, calculate based on actual shelf positions
-      const shelfWidth = Math.max(...store.shelvesXPerRow) * store.gapX;
-      const backToBackDepth = store.gapZ + store.backGap; // One back-to-back pair depth
+      const backToBackDepth = store.gapZ + store.backGap;
       const totalPairsDepth = Math.ceil(store.shelvesZ / 2) * backToBackDepth;
-      
+      const totalDepth = totalPairsDepth + store.depthOffsetStart + store.depthOffsetEnd;
       return {
-        width: shelfWidth + store.widthOffset,
-        depth: totalPairsDepth + store.depthOffset
+        width: totalWidth,
+        depth: totalDepth,
+        // Add offset positions for centering
+        offsetX: (store.widthOffsetEnd - store.widthOffsetStart) / 2,
+        offsetZ: (store.depthOffsetEnd - store.depthOffsetStart) / 2
       };
     }
   };
 
-  const { width: planeWidth, depth: planeDepth } = calculatePlaneDimensions();
+  const { width: planeWidth, depth: planeDepth, offsetX, offsetZ } = calculatePlaneDimensions();
 
   // Update center calculations for proper positioning
   const shelvesCenterX = (Math.max(...store.shelvesXPerRow) - 1) * store.gapX / 2;
@@ -543,12 +551,20 @@ export default function Scene({ onPointerOver, onPointerOut }) {
           />
           <directionalLight position={[-15, -15, 5]} intensity={3} />
           <RigidBody type="fixed">
-            <mesh receiveShadow rotation-x={-Math.PI / 2} position={[0, -0.75, 0]}>
+            <mesh 
+              receiveShadow 
+              rotation-x={-Math.PI / 2} 
+              position={[offsetX, -0.75, offsetZ]}
+            >
               <planeGeometry args={[planeWidth, planeDepth]} />
               <meshStandardMaterial color="#172554" />
             </mesh>
 
-            <GroundBorder width={planeWidth} depth={planeDepth} />
+            <GroundBorder 
+              width={planeWidth} 
+              depth={planeDepth} 
+              position={[offsetX, -0.745, offsetZ]} 
+            />
 
             {/* Fix PillarSet rendering - remove the +1 for drive layout */}
             {Array.from({ length: store.shelvesZ }, (_, z) => (

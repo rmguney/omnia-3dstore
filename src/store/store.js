@@ -9,16 +9,20 @@ const archetypeConfigs = {
     gapY: 2,
     gapZ: 9,
     backGap: 1.5,
-    widthOffset: 40,
-    depthOffset: 2,
+    widthOffsetStart: 15,
+    widthOffsetEnd: 15,
+    depthOffsetStart: 1,
+    depthOffsetEnd: -0.5,
   },
   'drive': {
     gapX: 1.51,
     gapY: 2,
     gapZ: 1.51,
     backGap: 0,
-    widthOffset: 40,
-    depthOffset: 2,
+    widthOffsetStart: 0.5,
+    widthOffsetEnd: 15,
+    depthOffsetStart: 0.5,
+    depthOffsetEnd: 0.5,
   }
 };
 

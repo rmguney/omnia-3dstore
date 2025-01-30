@@ -119,19 +119,33 @@ export default function Parameters() {
           min="0" 
         />
 
-        {/* Add offset inputs */}
-        <label>Genişlik Offset: </label>
+        {/* Replace old offset inputs with separate ones */}
+        <label>Genişlik Offset (Sol): </label>
         <input 
           type="number" 
-          value={store.widthOffset} 
-          onChange={(e) => handleOffsetChange('widthOffset', e.target.value)} 
+          value={store.widthOffsetStart} 
+          onChange={(e) => handleOffsetChange('widthOffsetStart', e.target.value)} 
           step="any"
         />
-        <label>Derinlik Offset: </label>
+        <label>Genişlik Offset (Sağ): </label>
         <input 
           type="number" 
-          value={store.depthOffset} 
-          onChange={(e) => handleOffsetChange('depthOffset', e.target.value)} 
+          value={store.widthOffsetEnd} 
+          onChange={(e) => handleOffsetChange('widthOffsetEnd', e.target.value)} 
+          step="any"
+        />
+        <label>Derinlik Offset (Ön): </label>
+        <input 
+          type="number" 
+          value={store.depthOffsetStart} 
+          onChange={(e) => handleOffsetChange('depthOffsetStart', e.target.value)} 
+          step="any"
+        />
+        <label>Derinlik Offset (Arka): </label>
+        <input 
+          type="number" 
+          value={store.depthOffsetEnd} 
+          onChange={(e) => handleOffsetChange('depthOffsetEnd', e.target.value)} 
           step="any"
         />
       </div>
