@@ -4,6 +4,7 @@
 export const stores = {
   store1: {
     storeName: "Çerkezköy - 1",
+    archetype: "back-to-back",
     shelvesY: 3,
     shelvesZ: 12,
     shelvesXPerRow: [16, 24, 24, 24, 14, 24, 24, 24, 14, 24, 24, 16],
@@ -48,21 +49,20 @@ export const stores = {
   },
   store2: {
     storeName: "Çerkezköy - 2",
+    archetype: "back-to-back",
     shelvesY: 3,
     shelvesZ: 8,
     shelvesXPerRow: [18, 18, 18, 18, 18, 18, 18, 18],
     boxData: [
-      { boxNumber: [0, 0, 0], content: 'GOLDEN KUVERTÜR BİTTER PARA (9101-C)' },
-
     ],
   },
   store3: {
     storeName: "Ferrero Demo",
+    archetype: "drive",
     shelvesY: 5,
     shelvesZ: 12,
     shelvesXPerRow: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
     boxData: [
-      { boxNumber: [0, 0, 0], content: 'GOLDEN KUVERTÜR BİTTER PARA (9101-C)' },
     ],
   },
 }

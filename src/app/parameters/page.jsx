@@ -3,6 +3,11 @@ import Link from 'next/link'
 import useStore from '@/store/store'
 import { stores } from '@/store/mockAPI'
 
+const ARCHETYPES = {
+  'back-to-back': 'Back to Back',
+  'drive': 'Drive'
+}
+
 export default function Parameters() {
   const store = useStore()
 
@@ -32,10 +37,31 @@ export default function Parameters() {
     store.setPlaneOffsets({ [key]: newValue })
   }
 
+  const handleArchetypeChange = (value) => {
+    store.setArchetype(value)
+    stores[store.selectedStore].archetype = value // Update stores
+  }
+
+  const handleOffsetChange = (key, value) => {
+    const newValue = parseFloat(value) || 0
+    store.setOffsets({ [key]: newValue })
+  }
+
   return (
     <div className="p-5">
       <Link href="/" className="inline-block mb-5 px-4 py-2 bg-orange-500 text-white rounded no-underline">Sahne</Link>
       <div className="grid grid-cols-[auto_1fr] gap-2.5 items-center max-w-[600px]">
+        <label>Raf Tipi: </label>
+        <select 
+          value={store.archetype} 
+          onChange={(e) => handleArchetypeChange(e.target.value)}
+          className="p-2 border rounded"
+        >
+          {Object.entries(ARCHETYPES).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+
         <label>Raflar Y: </label>
         <input 
           type="number" 
@@ -91,6 +117,22 @@ export default function Parameters() {
           value={store.backGap} 
           onChange={(e) => handleGapChange('backGap', e.target.value)} 
           min="0" 
+        />
+
+        {/* Add offset inputs */}
+        <label>Genişlik Offset: </label>
+        <input 
+          type="number" 
+          value={store.widthOffset} 
+          onChange={(e) => handleOffsetChange('widthOffset', e.target.value)} 
+          step="any"
+        />
+        <label>Derinlik Offset: </label>
+        <input 
+          type="number" 
+          value={store.depthOffset} 
+          onChange={(e) => handleOffsetChange('depthOffset', e.target.value)} 
+          step="any"
         />
       </div>
       <span className="block mt-5 text-sm text-orange-500">

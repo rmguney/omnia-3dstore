@@ -2,131 +2,57 @@ import { create } from 'zustand'
 import { stores } from './mockAPI'
 import { generateTempBoxData } from '../utils/tempBoxPopulator'
 
-// Define store-specific configurations
-const storeConfigs = {
-  store1: {
+// Define archetype-specific configurations
+const archetypeConfigs = {
+  'back-to-back': {
     gapX: 1.51,
     gapY: 2,
     gapZ: 9,
     backGap: 1.5,
+    widthOffset: 40,
+    depthOffset: 2,
   },
-  store2: {
-    gapX: 1.51,
-    gapY: 2,
-    gapZ: 9,
-    backGap: 1.5,
-  },
-  store3: {
+  'drive': {
     gapX: 1.51,
     gapY: 2,
     gapZ: 1.51,
-    backGap: 1.51,
+    backGap: 0,
+    widthOffset: 40,
+    depthOffset: 2,
   }
-}
+};
 
-const useStore = create((set) => ({
+const useStore = create((set, get) => ({
   // Scene configuration
   ...stores.store1,  // Default to store1
-  ...storeConfigs.store1,  // Default gaps for store1
+  ...archetypeConfigs['back-to-back'],  // Default gaps
   
   // Box state
   selectedBox: null,
+  focusedBox: null,
 
   // Camera state
   isFirstPerson: false,
   toggleCameraMode: () => set(state => ({ isFirstPerson: !state.isFirstPerson })),
 
-  // Essential actions only
-  setSelectedBox: (box) => set({ selectedBox: box }),
-  toggleBoxPresence: () => {
-    const { selectedBox, boxData } = useStore.getState()
-    if (!selectedBox || !boxData) return
-    const boxIndex = boxData.findIndex(box => 
-      box.boxNumber && 
-      box.boxNumber[0] === selectedBox.x && 
-      box.boxNumber[1] === selectedBox.y && 
-      box.boxNumber[2] === selectedBox.z
-    )
-    if (boxIndex === -1) return
-    const newData = [...boxData]
-    newData[boxIndex].present = !newData[boxIndex].present
-    set({ boxData: newData })
-  },
-
-  // Add storage for each store's box data
-  store1BoxData: null,
-  store2BoxData: null,
-  store3BoxData: null,
-
+  // Essential actions
   initializeBoxData: () => {
-    const currentState = useStore.getState();
-    let storeKey;
-    
-    if (currentState.storeName.includes('1')) {
-      storeKey = 'store1BoxData';
-    } else if (currentState.storeName.includes('2')) {
-      storeKey = 'store2BoxData';
-    } else {
-      storeKey = 'store3BoxData';
-    }
-    
-    // Only generate if not already initialized
-    if (!currentState[storeKey]) {
+    const state = get();
+    if (!state.boxData || state.boxData.length === 0) {
       const tempBoxData = generateTempBoxData(
-        currentState.shelvesY,
-        currentState.shelvesZ,
-        currentState.shelvesXPerRow,
-        currentState.storeName // Pass store name to generator
+        state.shelvesY,
+        state.shelvesZ,
+        state.shelvesXPerRow,
+        state.storeName
       );
-      set({ 
-        [storeKey]: tempBoxData,
-        boxData: tempBoxData
-      });
-    } else {
-      set({ boxData: currentState[storeKey] });
+      set({ boxData: tempBoxData });
     }
   },
 
-  setDimensions: (dimensions) => set((state) => ({ ...state, ...dimensions })),
-  setGaps: (gaps) => set((state) => ({ ...state, ...gaps })),
-  setShelvesXPerRow: (shelvesXPerRow) => set({ shelvesXPerRow }),
-  switchStore: (storeKey) => {
-    const currentState = useStore.getState();
-    // Determine current store key
-    let currentStoreKey;
-    if (currentState.storeName.includes('1')) {
-      currentStoreKey = 'store1BoxData';
-    } else if (currentState.storeName.includes('2')) {
-      currentStoreKey = 'store2BoxData';
-    } else {
-      currentStoreKey = 'store3BoxData';
-    }
-    
-    const updatedState = {
-      ...stores[storeKey],
-      ...storeConfigs[storeKey],  // Apply store-specific gaps
-      [currentStoreKey]: currentState.boxData
-    };
-    
-    // Set the box data for the new store
-    const newStoreKey = `${storeKey}BoxData`;
-    updatedState.boxData = currentState[newStoreKey] || null;
-    
-    set(updatedState);
-    
-    // Initialize box data if not already present
-    if (!updatedState.boxData) {
-      useStore.getState().initializeBoxData();
-    }
-  },
-
-  // Add new state for focused box
-  focusedBox: null,
-  
-  // Add method to set focused box
+  setSelectedBox: (box) => set({ selectedBox: box }),
   setFocusedBox: (boxNumber) => {
-    const state = useStore.getState();
-    const box = state.boxData.find(b => 
+    const state = get();
+    const box = state.boxData?.find(b => 
       b.boxNumber[0] === boxNumber[0] && 
       b.boxNumber[1] === boxNumber[1] && 
       b.boxNumber[2] === boxNumber[2]
@@ -136,9 +62,39 @@ const useStore = create((set) => ({
       selectedBox: { x: boxNumber[0], y: boxNumber[1], z: boxNumber[2] }
     });
   },
-  
-  // Add method to clear focused box
   clearFocusedBox: () => set({ focusedBox: null }),
-}))
+
+  // Basic setters
+  setDimensions: (dimensions) => set((state) => ({ ...state, ...dimensions })),
+  setGaps: (gaps) => set((state) => ({ ...state, ...gaps })),
+  setShelvesXPerRow: (shelvesXPerRow) => set({ shelvesXPerRow }),
+  
+  setArchetype: (archetype) => {
+    const config = archetypeConfigs[archetype];
+    set(state => ({ 
+      ...state,
+      archetype,
+      ...config,
+    }));
+  },
+
+  // Add method to update offsets
+  setOffsets: (offsets) => set(state => ({ ...state, ...offsets })),
+
+  // Store switching
+  switchStore: (storeKey) => {
+    const newStoreConfig = {
+      ...stores[storeKey],
+      ...archetypeConfigs[stores[storeKey].archetype],
+    };
+    set(newStoreConfig);
+    
+    // Initialize box data after switching store
+    const state = get();
+    if (!newStoreConfig.boxData || newStoreConfig.boxData.length === 0) {
+      state.initializeBoxData();
+    }
+  }
+}));
 
 export default useStore

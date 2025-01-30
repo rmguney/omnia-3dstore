@@ -30,8 +30,17 @@ export default function PillarSet({ rowIndex, shelvesCenterX, shelvesCenterZ }) 
   const store = useStore()
   const shelfWidth = 1.5
 
-  const zPosition = (rowIndex % 2 === 0 ? 0 : store.gapZ) + 
-                    Math.floor(rowIndex / 2) * (store.backGap + store.gapZ)
+  // Prevent rendering extra set for drive layout's last position
+  if (store.archetype === 'drive' && rowIndex >= store.shelvesZ) {
+    return null;
+  }
+
+  // Update z-position calculation based on archetype
+  const zPosition = store.archetype === 'drive'
+    ? rowIndex * store.gapZ - shelvesCenterZ
+    : (rowIndex % 2 === 0 ? 0 : store.gapZ) + 
+      Math.floor(rowIndex / 2) * (store.backGap + store.gapZ) - 
+      shelvesCenterZ;
 
   return (
     <group key={`pillars-${rowIndex}`}>
@@ -40,30 +49,30 @@ export default function PillarSet({ rowIndex, shelvesCenterX, shelvesCenterZ }) 
         position={[
           -shelvesCenterX - shelfWidth/2, 
           0, 
-          zPosition - shelvesCenterZ - shelfWidth/2
+          zPosition - shelfWidth/2
         ]} 
       />
       <Pillar 
         position={[
           -shelvesCenterX - shelfWidth/2, 
           0, 
-          zPosition - shelvesCenterZ + shelfWidth/2
+          zPosition + shelfWidth/2
         ]} 
       />
       
       {/* End pillars */}
       <Pillar 
         position={[
-          -shelvesCenterX + (store.shelvesXPerRow[rowIndex] - 1) * store.gapX + shelfWidth/2, 
+          -shelvesCenterX + (store.shelvesXPerRow[Math.min(rowIndex, store.shelvesZ - 1)] - 1) * store.gapX + shelfWidth/2, 
           0, 
-          zPosition - shelvesCenterZ - shelfWidth/2
+          zPosition - shelfWidth/2
         ]} 
       />
       <Pillar 
         position={[
-          -shelvesCenterX + (store.shelvesXPerRow[rowIndex] - 1) * store.gapX + shelfWidth/2, 
+          -shelvesCenterX + (store.shelvesXPerRow[Math.min(rowIndex, store.shelvesZ - 1)] - 1) * store.gapX + shelfWidth/2, 
           0, 
-          zPosition - shelvesCenterZ + shelfWidth/2
+          zPosition + shelfWidth/2
         ]} 
       />
     </group>

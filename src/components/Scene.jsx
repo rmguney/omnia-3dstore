@@ -11,9 +11,9 @@ import PillarSet from './PillarSet'
 
 function DomeEnvironment({ width, depth }) {
   const radius = Math.max(width, depth) * 6
-  const segments = 32  // Back to more segments for lines
-  const rings = 16    // Back to more rings for lines
-  const gridStep = 2   // Draw more lines (every 2nd line)
+  const segments = 32
+  const rings = 16
+  const gridStep = 2
   const groundColor = "#172554"
 
   const gridLines = useMemo(() => {
@@ -353,7 +353,6 @@ function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ })
       const targetPos = { x, y, z }
       const { position: cameraPos } = findBestCameraPosition(targetPos)
 
-      // Use smooth movement instead of immediate position change
       smoothMoveCamera(
         cameraPos,
         new THREE.Vector3(x, y, z)
@@ -416,7 +415,7 @@ function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ })
 }
 
 function GroundBorder({ width, depth }) {
-  const borderThickness = 1.00; // Adjust this value to change border thickness
+  const borderThickness = 1.00; // border thickness
   const shape = useMemo(() => {
     const shape = new THREE.Shape();
     // Outer rectangle
@@ -451,8 +450,6 @@ function GroundBorder({ width, depth }) {
   );
 }
 
-// ...existing code...
-
 export default function Scene({ onPointerOver, onPointerOut }) {
   const store = useStore()
   const shadowCameraRef = useRef()
@@ -470,15 +467,42 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   const handlePointerOut = () => {
     onPointerOut && onPointerOut()
   }
-  const widthOffset = 30;
-  const depthOffset = store.storeName.includes('Ferrero') ? 30 : -10; // Adjust offset based on store
   
-  const planeWidth = Math.max(...store.shelvesXPerRow) * store.gapX + widthOffset;
-  const planeDepth = store.shelvesZ * (store.gapZ + store.backGap/2) + depthOffset;
-  
-  // Update center calculations for consistent positioning
+  // Update plane calculations to properly account for shelf positions
+  const calculatePlaneDimensions = () => {
+    if (store.archetype === 'drive') {
+      return {
+        width: Math.max(...store.shelvesXPerRow) * store.gapX + store.widthOffset,
+        depth: store.shelvesZ * store.gapZ + store.depthOffset
+      };
+    } else {
+      // For back-to-back, calculate based on actual shelf positions
+      const shelfWidth = Math.max(...store.shelvesXPerRow) * store.gapX;
+      const backToBackDepth = store.gapZ + store.backGap; // One back-to-back pair depth
+      const totalPairsDepth = Math.ceil(store.shelvesZ / 2) * backToBackDepth;
+      
+      return {
+        width: shelfWidth + store.widthOffset,
+        depth: totalPairsDepth + store.depthOffset
+      };
+    }
+  };
+
+  const { width: planeWidth, depth: planeDepth } = calculatePlaneDimensions();
+
+  // Update center calculations for proper positioning
   const shelvesCenterX = (Math.max(...store.shelvesXPerRow) - 1) * store.gapX / 2;
-  const shelvesCenterZ = store.shelvesZ * (store.gapZ + store.backGap/2) / 4;
+  const shelvesCenterZ = store.archetype === 'drive'
+    ? (store.shelvesZ - 1) * store.gapZ / 2
+    : Math.ceil(store.shelvesZ / 2) * (store.gapZ + store.backGap) / 2;
+
+  const getZPosition = (z) => {
+    if (store.archetype === 'drive') {
+      return z * store.gapZ - shelvesCenterZ;
+    }
+    return ((z % 2 === 0 ? 0 : store.gapZ) + 
+            Math.floor(z / 2) * (store.backGap + store.gapZ)) - shelvesCenterZ;
+  };
 
   const domeRadius = Math.max(planeWidth, planeDepth) * 5;
 
@@ -526,6 +550,7 @@ export default function Scene({ onPointerOver, onPointerOut }) {
 
             <GroundBorder width={planeWidth} depth={planeDepth} />
 
+            {/* Fix PillarSet rendering - remove the +1 for drive layout */}
             {Array.from({ length: store.shelvesZ }, (_, z) => (
               <PillarSet 
                 key={`pillar-set-${z}`}
@@ -540,8 +565,7 @@ export default function Scene({ onPointerOver, onPointerOut }) {
           {Array.from({ length: store.shelvesZ }, (_, z) =>
             Array.from({ length: store.shelvesY }, (_, y) =>
               Array.from({ length: store.shelvesXPerRow[z] }, (_, x) => {
-                const zPosition = (z % 2 === 0 ? 0 : store.gapZ) + 
-                                  Math.floor(z / 2) * (store.backGap + store.gapZ)
+                const zPosition = getZPosition(z);
                 const box = store.boxData.find(box => 
                   box.boxNumber[0] === x && 
                   box.boxNumber[1] === y && 
@@ -550,11 +574,11 @@ export default function Scene({ onPointerOver, onPointerOut }) {
                 return (
                   <group key={`group-${x}-${y}-${z}`}>
                     <RigidBody type="fixed">
-                      <Shelf position={[x * store.gapX - shelvesCenterX, y * store.gapY, zPosition - shelvesCenterZ]} />
+                      <Shelf position={[x * store.gapX - shelvesCenterX, y * store.gapY, zPosition]} />
                     </RigidBody>
                     {box && (
                       <Box
-                        position={[x * store.gapX - shelvesCenterX, y * store.gapY + 0.6, zPosition - shelvesCenterZ]}
+                        position={[x * store.gapX - shelvesCenterX, y * store.gapY + 0.6, zPosition]}
                         onClick={() => store.setSelectedBox({ x, y, z })}
                         onPointerOver={() => handlePointerOver(box.content, box.boxNumber)}
                         onPointerOut={handlePointerOut}
