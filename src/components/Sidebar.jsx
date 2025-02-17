@@ -7,14 +7,29 @@ import { useState, useMemo } from 'react'  // Add useState and useMemo
 export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Filter boxes based on search query
-  const filteredBoxes = useMemo(() => {
-    if (!searchQuery.trim() || !store.boxData) return store.boxData;
+  // Combine regular boxes and loading area boxes based on toggle
+  const allBoxes = useMemo(() => {
+    let boxes = [...(store.boxData || [])];
     
-    return store.boxData.filter(box => 
-      box.content.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [store.boxData, searchQuery]);
+    if (store.showLoadingAreaBoxes) {
+      Object.entries(store.loadingAreas || {}).forEach(([areaKey, area]) => {
+        const areaBoxes = area.boxes?.map(box => ({
+          ...box,
+          isLoadingArea: true,
+          areaKey
+        })) || [];
+        boxes = [...boxes, ...areaBoxes];
+      });
+    }
+
+    if (searchQuery.trim()) {
+      boxes = boxes.filter(box => 
+        box.content.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return boxes;
+  }, [store.boxData, store.loadingAreas, store.showLoadingAreaBoxes, searchQuery]);
 
   return (
     <div className={`fixed top-0 -left-0.5 h-full bg-white shadow-xl z-40 transition-transform duration-300 transform ${
@@ -61,11 +76,25 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
           <IoSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
         </div>
 
-        {/* Update box list to use filtered results */}
-        <div className="overflow-y-auto" style={{ height: 'calc(85vh - 120px)' }}>
-          {filteredBoxes?.map((box, index) => (
+        {/* Loading area toggle */}
+        <div className="mb-3 flex items-center">
+          <input
+            type="checkbox"
+            id="showLoadingAreas"
+            checked={store.showLoadingAreaBoxes}
+            onChange={() => store.toggleLoadingAreaBoxes()}
+            className="mr-2"
+          />
+          <label htmlFor="showLoadingAreas" className="text-sm text-gray-700">
+            Yükleme alanlarındaki kolileri listele
+          </label>
+        </div>
+
+        {/* Box list - update height calculation */}
+        <div className="overflow-y-auto pb-4" style={{ height: 'calc(100vh - 245px)' }}>
+          {allBoxes.map((box, index) => (
             <div 
-              key={index}
+              key={`${box.isLoadingArea ? 'loading-' : ''}${index}`}
               className={`p-1 mb-1 rounded cursor-pointer transition-colors text-sm ${
                 store.selectedBox &&
                 store.selectedBox.x === box.boxNumber[0] &&
@@ -75,30 +104,34 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                   : 'hover:bg-orange-200'
               }`}
               onClick={() => {
-                store.setSelectedBox({
-                  x: box.boxNumber[0],
-                  y: box.boxNumber[1],
-                  z: box.boxNumber[2]
-                });
-                store.setFocusedBox(box.boxNumber);
+                store.setFocusedBox(box.boxNumber, box.isLoadingArea);
                 if (window.innerWidth < 1024) setIsSidebarOpen(false);
               }}
             >
               <div className="cursor-pointer p-2 rounded">
-                <div className="font-medium">Palet {box.boxNumber.join(', ')}</div>
-                <div className={`text-xs ${
+                <div className="font-medium flex items-center gap-2">
+                  {box.isLoadingArea && (
+                    <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[10px] font-semibold tracking-wide">
+                      YÜKLEME ALANI
+                    </span>
+                  )}
+                  <span>Palet {box.boxNumber.join(', ')}</span>
+                </div>
+                <div className={`text-xs mt-1 ${
                   store.selectedBox &&
                   store.selectedBox.x === box.boxNumber[0] &&
                   store.selectedBox.y === box.boxNumber[1] &&
                   store.selectedBox.z === box.boxNumber[2]
                     ? 'text-neutral-50'
                     : 'text-neutral-600'
-                }`}>{box.content}</div>
+                }`}>
+                  {box.content}
+                </div>
               </div>
             </div>
           ))}
           
-          {filteredBoxes?.length === 0 && searchQuery && (
+          {allBoxes.length === 0 && searchQuery && (
             <div className="text-center text-gray-500 mt-4">
               Aradığınız ürün bulunamadı
             </div>

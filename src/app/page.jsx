@@ -17,6 +17,16 @@ export default function App() {
   const [hoveredBoxNumber, setHoveredBoxNumber] = useState(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Initialize as false
 
+  // Initialize store and loading areas on mount
+  useEffect(() => {
+    // Force double initialization to ensure loading areas are populated
+    store.initializeBoxData();
+    // Small delay to ensure state is updated
+    requestAnimationFrame(() => {
+      store.initializeBoxData();
+    });
+  }, []); // Run only on mount
+
   // Initialize sidebar state based on screen size after mount
   useEffect(() => {
     setIsSidebarOpen(window.innerWidth >= 1024)

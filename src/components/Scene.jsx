@@ -344,21 +344,52 @@ function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ })
   // Update focus animation with new camera positioning
   useEffect(() => {
     if (focusedBox && controlsRef.current) {
-      const x = focusedBox.boxNumber[0] * store.gapX - shelvesCenterX
-      const y = focusedBox.boxNumber[1] * store.gapY + 1
-      const z = (focusedBox.boxNumber[2] % 2 === 0 ? 0 : store.gapZ) + 
-                Math.floor(focusedBox.boxNumber[2] / 2) * (store.backGap + store.gapZ) - 
-                shelvesCenterZ
+      let x, y, z;
+      
+      if (focusedBox.isLoadingArea) {
+        // Get position for loading area box
+        const area = Object.values(store.loadingAreas).find(area => 
+          area.boxes?.some(b => 
+            b.boxNumber[0] === focusedBox.boxNumber[0] &&
+            b.boxNumber[1] === focusedBox.boxNumber[1] &&
+            b.boxNumber[2] === focusedBox.boxNumber[2]
+          )
+        );
+        
+        if (area) {
+          const margin = 1.0;
+          x = area.position.includes('Right') 
+            ? planeWidth/2 - margin - (area.boxesX * store.gapX)/2
+            : -planeWidth/2 + margin + (area.boxesX * store.gapX)/2;
+          
+          y = focusedBox.boxNumber[1] * area.gapY + 1;
+          
+          z = area.position.includes('back') 
+            ? planeDepth/2 - margin - (area.boxesZ * area.gapZ)/2
+            : -planeDepth/2 + margin + (area.boxesZ * area.gapZ)/2;
+          
+          // Adjust for box position within loading area
+          x += (focusedBox.boxNumber[0] - (area.boxesX - 1)/2) * area.gapX;
+          z += (focusedBox.boxNumber[2] - (area.boxesZ - 1)/2) * area.gapZ;
+        }
+      } else {
+        // Regular shelf box position calculation
+        x = focusedBox.boxNumber[0] * store.gapX - shelvesCenterX;
+        y = focusedBox.boxNumber[1] * store.gapY + 1;
+        z = (focusedBox.boxNumber[2] % 2 === 0 ? 0 : store.gapZ) + 
+            Math.floor(focusedBox.boxNumber[2] / 2) * (store.backGap + store.gapZ) - 
+            shelvesCenterZ;
+      }
 
-      const targetPos = { x, y, z }
-      const { position: cameraPos } = findBestCameraPosition(targetPos)
+      const targetPos = { x, y, z };
+      const { position: cameraPos } = findBestCameraPosition(targetPos);
 
       smoothMoveCamera(
         cameraPos,
         new THREE.Vector3(x, y, z)
       );
     }
-  }, [focusedBox, store, shelvesCenterX, shelvesCenterZ, scene])
+  }, [focusedBox, store, shelvesCenterX, shelvesCenterZ, scene, planeWidth, planeDepth]);
 
   // Add user interaction state
   const userInteracting = useRef(false)
@@ -447,6 +478,78 @@ function GroundBorder({ width, depth, position }) {
         side={THREE.DoubleSide}
       />
     </mesh>
+  );
+}
+
+// Update LoadingArea component to include onClick handler
+function LoadingArea({ config, planeWidth, planeDepth, offsetX, offsetZ, onPointerOver, onPointerOut }) {
+  const getPosition = () => {
+    const margin = 1.0; // reduced margin to be closer to border
+    const x = config.position.includes('Right') 
+      ? planeWidth/2 - margin - (config.boxesX * config.gapX)/2 + offsetX
+      : -planeWidth/2 + margin + (config.boxesX * config.gapX)/2 + offsetX;
+    
+    const z = config.position.includes('back') 
+      ? planeDepth/2 - margin - (config.boxesZ * config.gapZ)/2 + offsetZ
+      : -planeDepth/2 + margin + (config.boxesZ * config.gapZ)/2 + offsetZ;
+
+    return [x, 0, z];
+  }
+
+  const [x, y, z] = getPosition();
+
+  // Create positions array for all possible box positions
+  const positions = [];
+  let currentId = 1;
+
+  // Fill positions in correct order: X → Z → Y
+  for (let py = 0; py < config.boxesY; py++) {
+    for (let pz = 0; pz < config.boxesZ; pz++) {
+      for (let px = 0; px < config.boxesX; px++) {
+        positions.push({
+          pos: [px, py, pz],
+          id: currentId++
+        });
+      }
+    }
+  }
+
+  const store = useStore();
+
+  return (
+    <group position={[x, y, z]}>
+      {positions.map(({ pos: [px, py, pz], id }) => {
+        const box = config.boxes?.find(b => 
+          b.boxNumber[0] === px && 
+          b.boxNumber[1] === py && 
+          b.boxNumber[2] === pz
+        );
+        
+        if (!box) return null;
+
+        const boxWithArea = {
+          ...box,
+          isLoadingArea: true,
+          areaConfig: config
+        };
+
+        return (
+          <Box
+            key={`loading-${config.position}-${px}-${py}-${pz}`}
+            position={[
+              (px - (config.boxesX - 1)/2) * config.gapX,
+              py * config.gapY,
+              (pz - (config.boxesZ - 1)/2) * config.gapZ
+            ]}
+            content={`${box.content} (${id})`}
+            boxNumber={[px, py, pz]}
+            onClick={() => store.setFocusedBox(boxWithArea.boxNumber, true)}
+            onPointerOver={() => onPointerOver(box.content, [px, py, pz])}
+            onPointerOut={onPointerOut}
+          />
+        );
+      })}
+    </group>
   );
 }
 
@@ -611,6 +714,22 @@ export default function Scene({ onPointerOver, onPointerOut }) {
               })
             )
           )}
+
+          {/* Update loading areas rendering - remove archetype condition */}
+          {store.loadingAreas && 
+            Object.entries(store.loadingAreas).map(([key, config]) => (
+              <LoadingArea
+                key={`loading-area-${key}`}
+                config={config}
+                planeWidth={planeWidth}
+                planeDepth={planeDepth}
+                offsetX={offsetX}
+                offsetZ={offsetZ}
+                onPointerOver={handlePointerOver}
+                onPointerOut={handlePointerOut}
+              />
+            ))}
+
         </Physics>
       </Canvas>
       

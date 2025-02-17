@@ -46,6 +46,66 @@ export const stores = {
       { boxNumber: [14, 1, 0], content: 'BADEM EZMESİ 1KG' },
       { boxNumber: [15, 1, 0], content: 'FINDIK KREMASI 1KG' },
     ],
+    loadingAreas: {
+      frontLeft: {
+        position: "frontLeft",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5, // distance from the edge
+        boxes: [
+          { boxNumber: [0, 0, 0], content: 'UN 20KG' },
+          { boxNumber: [1, 0, 0], content: 'ŞEKER 1KG' },
+          { boxNumber: [0, 1, 0], content: 'TUZ 10KG' },
+        ]
+      },
+      frontRight: {
+        position: "frontRight",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+        boxes: [
+          { boxNumber: [0, 0, 0], content: 'KAKAO 1KG' },
+          { boxNumber: [1, 0, 0], content: 'FINDIK 1KG' },
+        ]
+      },
+      backLeft: {
+        position: "backLeft",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+        boxes: [
+          { boxNumber: [0, 0, 0], content: 'YAĞ 20L' },
+          { boxNumber: [1, 0, 0], content: 'SÜT TOZU' },
+        ]
+      },
+      backRight: {
+        position: "backRight",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+        boxes: [
+          { boxNumber: [0, 0, 0], content: 'MISIR NİŞASTASI' },
+          { boxNumber: [1, 0, 0], content: 'REÇEL 500G' },
+          // Add more items as needed
+        ]
+      }
+    },
   },
   store2: {
     storeName: "Çerkezköy - 2",
@@ -55,6 +115,48 @@ export const stores = {
     shelvesXPerRow: [18, 18, 18, 18, 18, 18, 18, 18],
     boxData: [
     ],
+    loadingAreas: {
+      frontLeft: {
+        position: "frontLeft",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5, // distance from the edge
+      },
+      frontRight: {
+        position: "frontRight",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+      },
+      backLeft: {
+        position: "backLeft",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+      },
+      backRight: {
+        position: "backRight",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+      }
+    },
   },
   store3: {
     storeName: "Ferrero Demo",
@@ -64,7 +166,21 @@ export const stores = {
     shelvesXPerRow: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
     boxData: [
     ],
-  },
+    loadingAreas: {
+      frontRight: {
+        position: "frontRight",
+        boxesX: 4,
+        boxesY: 1,
+        boxesZ: 3,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 2, 
+        boxes: [
+        ]
+      }
+    }
+  }
 }
 
 // Ensure apiData is updated when dimensions or gaps are changed

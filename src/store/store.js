@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { stores } from './mockAPI'
-import { generateTempBoxData } from '../utils/tempBoxPopulator'
+import { generateTempBoxData, generateLoadingAreas } from '../utils/tempBoxPopulator'
 
 // Define archetype-specific configurations
 const archetypeConfigs = {
@@ -42,30 +42,52 @@ const useStore = create((set, get) => ({
   // Essential actions
   initializeBoxData: () => {
     const state = get();
-    if (!state.boxData || state.boxData.length === 0) {
-      const tempBoxData = generateTempBoxData(
-        state.shelvesY,
-        state.shelvesZ,
-        state.shelvesXPerRow,
-        state.storeName
-      );
-      set({ boxData: tempBoxData });
-    }
+    
+    // Initialize both box data and loading areas immediately
+    const loadingAreas = state.loadingAreas ? generateLoadingAreas(state.loadingAreas, state.storeName) : {};
+    const boxData = (!state.boxData || state.boxData.length === 0) 
+      ? generateTempBoxData(state.shelvesY, state.shelvesZ, state.shelvesXPerRow, state.storeName)
+      : state.boxData;
+
+    set({ loadingAreas, boxData });
   },
 
   setSelectedBox: (box) => set({ selectedBox: box }),
-  setFocusedBox: (boxNumber) => {
+
+  // Add new state for loading area visibility
+  showLoadingAreaBoxes: false,
+  toggleLoadingAreaBoxes: () => set(state => ({ showLoadingAreaBoxes: !state.showLoadingAreaBoxes })),
+
+  // Update setFocusedBox to handle loading area boxes
+  setFocusedBox: (boxNumber, isLoadingArea = false) => {
     const state = get();
-    const box = state.boxData?.find(b => 
-      b.boxNumber[0] === boxNumber[0] && 
-      b.boxNumber[1] === boxNumber[1] && 
-      b.boxNumber[2] === boxNumber[2]
-    );
+    let box;
+
+    if (isLoadingArea) {
+      // Search in loading areas
+      for (const area of Object.values(state.loadingAreas)) {
+        box = area.boxes?.find(b =>
+          b.boxNumber[0] === boxNumber[0] && 
+          b.boxNumber[1] === boxNumber[1] && 
+          b.boxNumber[2] === boxNumber[2]
+        );
+        if (box) break;
+      }
+    } else {
+      // Search in regular boxes
+      box = state.boxData?.find(b => 
+        b.boxNumber[0] === boxNumber[0] && 
+        b.boxNumber[1] === boxNumber[1] && 
+        b.boxNumber[2] === boxNumber[2]
+      );
+    }
+
     set({ 
       focusedBox: box,
-      selectedBox: { x: boxNumber[0], y: boxNumber[1], z: boxNumber[2] }
+      selectedBox: box ? { x: boxNumber[0], y: boxNumber[1], z: boxNumber[2] } : null
     });
   },
+
   clearFocusedBox: () => set({ focusedBox: null }),
 
   // Basic setters
@@ -85,6 +107,19 @@ const useStore = create((set, get) => ({
   // Add method to update offsets
   setOffsets: (offsets) => set(state => ({ ...state, ...offsets })),
 
+  // Loading area configuration
+  loadingAreas: {},
+  
+  setLoadingAreaConfig: (areaId, config) => set(state => ({
+    loadingAreas: {
+      ...state.loadingAreas,
+      [areaId]: {
+        ...state.loadingAreas[areaId],
+        ...config
+      }
+    }
+  })),
+
   // Store switching
   switchStore: (storeKey) => {
     const newStoreConfig = {
@@ -93,11 +128,9 @@ const useStore = create((set, get) => ({
     };
     set(newStoreConfig);
     
-    // Initialize box data after switching store
+    // Initialize immediately after setting new config
     const state = get();
-    if (!newStoreConfig.boxData || newStoreConfig.boxData.length === 0) {
-      state.initializeBoxData();
-    }
+    state.initializeBoxData();
   }
 }));
 
