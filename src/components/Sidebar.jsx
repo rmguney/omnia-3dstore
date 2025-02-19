@@ -32,10 +32,13 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
   }, [store.boxData, store.loadingAreas, store.showLoadingAreaBoxes, searchQuery]);
 
   return (
-    <div className={`fixed top-0 -left-0.5 h-full bg-white shadow-xl z-40 transition-transform duration-300 transform ${
-      isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-    }`} style={{ width: '250px', marginTop: '60px' }}>
-      {/* Logo Box */}
+    <div 
+      className={`fixed top-[60px] bottom-0 -left-0.5 bg-white shadow-xl z-40 transition-transform duration-300 transform ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`} 
+      style={{ width: '250px' }}
+    >
+      {/* Header */}
       <div className="bg-[#172554] py-4 shadow-md relative">
         <button 
           onClick={() => setIsSidebarOpen(false)}
@@ -44,10 +47,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
           <IoClose size={20} />
         </button>
         <div className="flex flex-col items-center justify-center gap-2">
-          <a 
-            href="https://parallax-login.vercel.app" 
-            className="cursor-pointer"
-          >
+          <a href="https://parallax-login.vercel.app" className="cursor-pointer">
             <Image
               src={huskyLogo}
               alt="Husky Logo"
@@ -61,37 +61,39 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
         </div>
       </div>
 
-      <div className="p-3 lg:pr-1">
-        {/* Add Search Bar */}
-        <div className="mb-3 relative">
-          <input
-            type="text"
-            placeholder="Ürün arama"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-1 bg-gray-100 border border-gray-200 text-sm rounded-lg 
-                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     pr-10"
-          />
-          <IoSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+      {/* Content Container */}
+      <div className="flex flex-col h-[calc(100%-132px)] pb-4">
+        {/* Search and Toggle */}
+        <div className="p-3 space-y-3 shrink-0">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Ürün arama"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-1 bg-gray-100 border border-gray-200 text-sm rounded-lg 
+                       focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                       pr-10"
+            />
+            <IoSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showLoadingAreas"
+              checked={store.showLoadingAreaBoxes}
+              onChange={() => store.toggleLoadingAreaBoxes()}
+              className="mr-2"
+            />
+            <label htmlFor="showLoadingAreas" className="text-xs text-slate-600">
+              Yükleme ve mal kabul alanlarındaki ürünleri listele
+            </label>
+          </div>
         </div>
 
-        {/* Loading area toggle */}
-        <div className="mb-3 flex items-center">
-          <input
-            type="checkbox"
-            id="showLoadingAreas"
-            checked={store.showLoadingAreaBoxes}
-            onChange={() => store.toggleLoadingAreaBoxes()}
-            className="mr-2"
-          />
-          <label htmlFor="showLoadingAreas" className="text-sm text-gray-700">
-            Yükleme alanlarındaki kolileri listele
-          </label>
-        </div>
-
-        {/* Box list - update height calculation */}
-        <div className="overflow-y-auto pb-4" style={{ height: 'calc(100vh - 245px)' }}>
+        {/* Box List - Flexible height with scroll */}
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
           {allBoxes.map((box, index) => (
             <div 
               key={`${box.isLoadingArea ? 'loading-' : ''}${index}`}
@@ -99,12 +101,14 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                 store.selectedBox &&
                 store.selectedBox.x === box.boxNumber[0] &&
                 store.selectedBox.y === box.boxNumber[1] &&
-                store.selectedBox.z === box.boxNumber[2]
+                store.selectedBox.z === box.boxNumber[2] &&
+                store.selectedBox.isLoadingArea === !!box.isLoadingArea &&
+                (!box.isLoadingArea || store.selectedBox.areaKey === box.areaKey)
                   ? 'bg-orange-400 text-white'
                   : 'hover:bg-orange-200'
               }`}
               onClick={() => {
-                store.setFocusedBox(box.boxNumber, box.isLoadingArea);
+                store.setFocusedBox(box.boxNumber, box.isLoadingArea, box.areaKey);
                 if (window.innerWidth < 1024) setIsSidebarOpen(false);
               }}
             >
@@ -112,7 +116,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                 <div className="font-medium flex items-center gap-2">
                   {box.isLoadingArea && (
                     <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[10px] font-semibold tracking-wide">
-                      YÜKLEME ALANI
+                      {store.loadingAreas[box.areaKey].isMalKabul ? 'KABUL ALANI' : 'YÜKLEME ALANI'}
                     </span>
                   )}
                   <span>Palet {box.boxNumber.join(', ')}</span>

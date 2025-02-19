@@ -44,7 +44,7 @@ export default function PinnedBox({ store }) {
         </div>
         <div className="bg-[#070F2A] bg-opacity-80 rounded-lg shadow-lg p-4">
           <div className="font-semibold text-sm mb-2">
-            <span>Palet No: {store.selectedBox.x}, {store.selectedBox.y}, {store.selectedBox.z}</span>
+            <span>Seçili Palet: {store.selectedBox.x}, {store.selectedBox.y}, {store.selectedBox.z}</span>
           </div>
           <div className="text-xs">{content}</div>
         </div>

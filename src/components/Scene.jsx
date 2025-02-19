@@ -527,12 +527,6 @@ function LoadingArea({ config, planeWidth, planeDepth, offsetX, offsetZ, onPoint
         
         if (!box) return null;
 
-        const boxWithArea = {
-          ...box,
-          isLoadingArea: true,
-          areaConfig: config
-        };
-
         return (
           <Box
             key={`loading-${config.position}-${px}-${py}-${pz}`}
@@ -543,9 +537,15 @@ function LoadingArea({ config, planeWidth, planeDepth, offsetX, offsetZ, onPoint
             ]}
             content={`${box.content} (${id})`}
             boxNumber={[px, py, pz]}
-            onClick={() => store.setFocusedBox(boxWithArea.boxNumber, true)}
+            onClick={() => store.setFocusedBox([px, py, pz], true, config.position)}
             onPointerOver={() => onPointerOver(box.content, [px, py, pz])}
             onPointerOut={onPointerOut}
+            isSelected={store.selectedBox && 
+              store.selectedBox.isLoadingArea &&
+              store.selectedBox.areaKey === config.position &&
+              store.selectedBox.x === px &&
+              store.selectedBox.y === py &&
+              store.selectedBox.z === pz}
           />
         );
       })}
@@ -698,12 +698,13 @@ export default function Scene({ onPointerOver, onPointerOut }) {
                     {box && (
                       <Box
                         position={[x * store.gapX - shelvesCenterX, y * store.gapY + 0.6, zPosition]}
-                        onClick={() => store.setSelectedBox({ x, y, z })}
+                        onClick={() => store.setFocusedBox([x, y, z], false)}
                         onPointerOver={() => handlePointerOver(box.content, box.boxNumber)}
                         onPointerOut={handlePointerOut}
                         content={box.content}
                         boxNumber={box.boxNumber}
                         isSelected={store.selectedBox && 
+                                  !store.selectedBox.isLoadingArea &&
                                   store.selectedBox.x === x && 
                                   store.selectedBox.y === y && 
                                   store.selectedBox.z === z}

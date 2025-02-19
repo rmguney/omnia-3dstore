@@ -27,10 +27,11 @@ const archetypeConfigs = {
 };
 
 const useStore = create((set, get) => ({
-  // Scene configuration
-  ...stores.store1,  // Default to store1
-  ...archetypeConfigs['back-to-back'],  // Default gaps
-  
+  // Scene configuration - explicitly set all default values
+  selectedStore: 'store1',
+  ...stores.store1,
+  ...archetypeConfigs['back-to-back'],
+
   // Box state
   selectedBox: null,
   focusedBox: null,
@@ -43,11 +44,28 @@ const useStore = create((set, get) => ({
   initializeBoxData: () => {
     const state = get();
     
-    // Initialize both box data and loading areas immediately
-    const loadingAreas = state.loadingAreas ? generateLoadingAreas(state.loadingAreas, state.storeName) : {};
-    const boxData = (!state.boxData || state.boxData.length === 0) 
-      ? generateTempBoxData(state.shelvesY, state.shelvesZ, state.shelvesXPerRow, state.storeName)
-      : state.boxData;
+    // Make sure we're using the correct store's configuration
+    const currentStore = stores[state.selectedStore];
+    
+    // Update state with current store's configuration
+    set({
+      ...currentStore,
+      ...archetypeConfigs[currentStore.archetype],
+    });
+    
+    // Initialize box data and loading areas
+    const loadingAreas = currentStore.loadingAreas ? 
+      generateLoadingAreas(currentStore.loadingAreas, currentStore.storeName) : 
+      {};
+    
+    const boxData = (!currentStore.boxData || currentStore.boxData.length === 0) 
+      ? generateTempBoxData(
+          currentStore.shelvesY,
+          currentStore.shelvesZ,
+          currentStore.shelvesXPerRow,
+          currentStore.storeName
+        )
+      : currentStore.boxData;
 
     set({ loadingAreas, boxData });
   },
@@ -59,19 +77,23 @@ const useStore = create((set, get) => ({
   toggleLoadingAreaBoxes: () => set(state => ({ showLoadingAreaBoxes: !state.showLoadingAreaBoxes })),
 
   // Update setFocusedBox to handle loading area boxes
-  setFocusedBox: (boxNumber, isLoadingArea = false) => {
+  setFocusedBox: (boxNumber, isLoadingArea = false, areaKey = null) => {
     const state = get();
     let box;
 
-    if (isLoadingArea) {
-      // Search in loading areas
-      for (const area of Object.values(state.loadingAreas)) {
-        box = area.boxes?.find(b =>
-          b.boxNumber[0] === boxNumber[0] && 
-          b.boxNumber[1] === boxNumber[1] && 
-          b.boxNumber[2] === boxNumber[2]
-        );
-        if (box) break;
+    if (isLoadingArea && areaKey) {
+      // Get box from specific loading area
+      box = state.loadingAreas[areaKey].boxes?.find(b =>
+        b.boxNumber[0] === boxNumber[0] && 
+        b.boxNumber[1] === boxNumber[1] && 
+        b.boxNumber[2] === boxNumber[2]
+      );
+      if (box) {
+        box = {
+          ...box,
+          isLoadingArea: true,
+          areaKey
+        };
       }
     } else {
       // Search in regular boxes
@@ -84,7 +106,13 @@ const useStore = create((set, get) => ({
 
     set({ 
       focusedBox: box,
-      selectedBox: box ? { x: boxNumber[0], y: boxNumber[1], z: boxNumber[2] } : null
+      selectedBox: box ? { 
+        x: boxNumber[0], 
+        y: boxNumber[1], 
+        z: boxNumber[2],
+        isLoadingArea,
+        areaKey
+      } : null
     });
   },
 
@@ -122,16 +150,10 @@ const useStore = create((set, get) => ({
 
   // Store switching
   switchStore: (storeKey) => {
-    const newStoreConfig = {
-      ...stores[storeKey],
-      ...archetypeConfigs[stores[storeKey].archetype],
-    };
-    set(newStoreConfig);
-    
-    // Initialize immediately after setting new config
+    set({ selectedStore: storeKey });
     const state = get();
     state.initializeBoxData();
-  }
+  },
 }));
 
 export default useStore

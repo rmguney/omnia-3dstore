@@ -56,6 +56,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 5, // distance from the edge
+        isMalKabul: false,
         boxes: [
           { boxNumber: [0, 0, 0], content: 'UN 20KG' },
           { boxNumber: [1, 0, 0], content: 'ŞEKER 1KG' },
@@ -71,6 +72,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 5,
+        isMalKabul: true,
         boxes: [
           { boxNumber: [0, 0, 0], content: 'KAKAO 1KG' },
           { boxNumber: [1, 0, 0], content: 'FINDIK 1KG' },
@@ -85,6 +87,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 5,
+        isMalKabul: false,
         boxes: [
           { boxNumber: [0, 0, 0], content: 'YAĞ 20L' },
           { boxNumber: [1, 0, 0], content: 'SÜT TOZU' },
@@ -99,6 +102,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 5,
+        isMalKabul: true,
         boxes: [
           { boxNumber: [0, 0, 0], content: 'MISIR NİŞASTASI' },
           { boxNumber: [1, 0, 0], content: 'REÇEL 500G' },
@@ -125,6 +129,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 5, // distance from the edge
+        isMalKabul: false,
       },
       frontRight: {
         position: "frontRight",
@@ -135,6 +140,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 5,
+        isMalKabul: true,
       },
       backLeft: {
         position: "backLeft",
@@ -145,6 +151,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 5,
+        isMalKabul: false,
       },
       backRight: {
         position: "backRight",
@@ -155,6 +162,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 5,
+        isMalKabul: true,
       }
     },
   },
@@ -176,6 +184,7 @@ export const stores = {
         gapY: 1.2,
         gapZ: 1.51,
         inset: 2, 
+        isMalKabul: true,
         boxes: [
         ]
       }
