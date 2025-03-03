@@ -60,7 +60,7 @@ export const stores = {
         boxes: [
           { boxNumber: [0, 0, 0], content: 'UN 20KG' },
           { boxNumber: [1, 0, 0], content: 'ŞEKER 1KG' },
-          { boxNumber: [0, 1, 0], content: 'TUZ 10KG' },
+          { boxNumber: [2, 0, 0], content: 'TUZ 10KG' },
         ]
       },
       frontRight: {

@@ -513,13 +513,13 @@ function LoadingArea({ config, planeWidth, planeDepth, offsetX, offsetZ, onPoint
   return (
     <group position={[x, y, z]}>
       {positions.map(({ pos: [px, py, pz], id }) => {
-        // For back areas, reverse the order of box placement
-        const adjustedPx = config.position.includes('back') 
-          ? (config.boxesX - 1) - px  // Reverse X for back areas
+        // [0,0,0] is always at the corner
+        const adjustedPx = config.position.includes('Right') 
+          ? (config.boxesX - 1) - px
           : px;
           
         const adjustedPz = config.position.includes('back') 
-          ? (config.boxesZ - 1) - pz  // Reverse Z for back areas
+          ? (config.boxesZ - 1) - pz
           : pz;
           
         const box = config.boxes?.find(b => 
