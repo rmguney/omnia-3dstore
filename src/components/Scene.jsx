@@ -346,21 +346,15 @@ function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, shelvesCenterZ })
     if (focusedBox && controlsRef.current) {
       let x, y, z;
       
-      if (focusedBox.isLoadingArea) {
-        // Get position for loading area box
-        const area = Object.values(store.loadingAreas).find(area => 
-          area.boxes?.some(b => 
-            b.boxNumber[0] === focusedBox.boxNumber[0] &&
-            b.boxNumber[1] === focusedBox.boxNumber[1] &&
-            b.boxNumber[2] === focusedBox.boxNumber[2]
-          )
-        );
+      if (focusedBox.isLoadingArea && focusedBox.areaKey) {
+        // Get the specific loading area directly using the areaKey
+        const area = store.loadingAreas[focusedBox.areaKey];
         
         if (area) {
           const margin = 1.0;
           x = area.position.includes('Right') 
-            ? planeWidth/2 - margin - (area.boxesX * store.gapX)/2
-            : -planeWidth/2 + margin + (area.boxesX * store.gapX)/2;
+            ? planeWidth/2 - margin - (area.boxesX * area.gapX)/2
+            : -planeWidth/2 + margin + (area.boxesX * area.gapX)/2;
           
           y = focusedBox.boxNumber[1] * area.gapY + 1;
           
@@ -519,6 +513,15 @@ function LoadingArea({ config, planeWidth, planeDepth, offsetX, offsetZ, onPoint
   return (
     <group position={[x, y, z]}>
       {positions.map(({ pos: [px, py, pz], id }) => {
+        // For back areas, reverse the order of box placement
+        const adjustedPx = config.position.includes('back') 
+          ? (config.boxesX - 1) - px  // Reverse X for back areas
+          : px;
+          
+        const adjustedPz = config.position.includes('back') 
+          ? (config.boxesZ - 1) - pz  // Reverse Z for back areas
+          : pz;
+          
         const box = config.boxes?.find(b => 
           b.boxNumber[0] === px && 
           b.boxNumber[1] === py && 
@@ -531,9 +534,9 @@ function LoadingArea({ config, planeWidth, planeDepth, offsetX, offsetZ, onPoint
           <Box
             key={`loading-${config.position}-${px}-${py}-${pz}`}
             position={[
-              (px - (config.boxesX - 1)/2) * config.gapX,
+              (adjustedPx - (config.boxesX - 1)/2) * config.gapX,
               py * config.gapY,
-              (pz - (config.boxesZ - 1)/2) * config.gapZ
+              (adjustedPz - (config.boxesZ - 1)/2) * config.gapZ
             ]}
             content={`${box.content} (${id})`}
             boxNumber={[px, py, pz]}
