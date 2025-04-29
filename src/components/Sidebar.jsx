@@ -47,7 +47,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
           <IoClose size={20} />
         </button>
         <div className="flex flex-col items-center justify-center gap-2">
-          <a href="https://parallax-login.vercel.app" className="cursor-pointer">
+          <a href="https://www.b2cargo.com/online-islemler" className="cursor-pointer">
             <Image
               src={huskyLogo}
               alt="Husky Logo"
