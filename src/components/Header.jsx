@@ -35,7 +35,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
   return (
     <header className="flex justify-between items-center p-2.5 bg-gradient-to-r from-[#172554] to-[#2e1754] text-white shadow-xl fixed top-0 left-0 w-full z-50">
       {/* Left section - Just sidebar toggle now */}
-      <div className="flex items-center">
+      <div className="flex items-center w-24 justify-start">
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="text-white hover:text-orange-400 transition-colors p-1.5 rounded-full hover:bg-white/10"
@@ -69,13 +69,13 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
           
           <div 
             ref={dropdownRef}
-            className={`absolute left-0 top-full mt-1 w-full min-w-[180px] rounded-md shadow-lg bg-[#172554] bg-opacity-95 text-white transition-all duration-300 ease-in-out transform origin-top ${
+            className={`absolute left-0 top-full mt-1 w-[100%] rounded-md shadow-lg bg-[#172554] bg-opacity-95 text-white transition-all duration-300 ease-in-out transform origin-top ${
               isDropdownOpen 
-                ? 'opacity-100 scale-100 visible translate-y-0' 
-                : 'opacity-0 scale-95 invisible -translate-y-2'
-            }`}
+                ? 'opacity-100 visible translate-y-0 scale-y-100' 
+                : 'opacity-0 invisible -translate-y-4 scale-y-75'
+            } overflow-hidden`}
           >
-            <div className="py-1 rounded-md overflow-hidden">
+            <div className={`py-1 rounded-md overflow-hidden transition-all duration-300 ${isDropdownOpen ? 'animate-slideDown' : ''}`}>
                 {Object.keys(stores).map((key) => (
                   <button
                     key={key}
@@ -98,70 +98,72 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
       </div>
 
       {/* Right section - Camera mode toggle */}
-      <label className="items-center cursor-pointer mr-2 hidden lg:flex">
-        <div className="relative">
-          <input 
-            type="checkbox" 
-            checked={isFirstPerson} 
-            onChange={toggleCameraMode} 
-            className="sr-only"
-          />
-          <div className="block bg-white/10 w-10 h-5 rounded-full border border-white/30"></div>
-          <div className={`dot absolute left-1 top-0.5 bg-orange-500 hover:bg-orange-400 w-4 h-4 rounded-full transition-transform duration-300 ${isFirstPerson ? 'transform translate-x-5' : ''}`}></div>
-        </div>
-        <span className="ml-2 text-white text-xs">{isFirstPerson ? 'Birinci Şahıs' : 'Yörüngesel'}</span>
-        <div className="relative group ml-3">
-          <BsQuestionCircle className="text-white hover:text-orange-500 transition-colors cursor-help size-5" />
-          <div className="absolute right-0 top-full mt-2 p-3 bg-white text-blue-950 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform origin-top-right pointer-events-none
-            group-hover:opacity-100 group-hover:scale-100 group-hover:visible group-hover:translate-y-0
-            opacity-0 scale-95 invisible -translate-y-2 w-68 text-xs">
-            <p className="mb-2 text-sm font-bold text-center border-b pb-1.5">Kontrol Şeması</p>
-            
-            <div className="mb-3">
-              <p className="mb-1.5 font-bold flex items-center gap-1.5 text-orange-600 text-xs">
-                <BsMouseFill className="text-sm" /> Yörüngesel Mod
-              </p>
-              <ul className="space-y-1.5 ml-1.5">
-                <li className="flex items-center gap-1.5">
-                  <PiMouseLeftClickFill className="text-blue-700" /> Sol tık (Basılı): Kamera rotasyonu
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <PiMouseRightClickFill className="text-blue-700" /> Sağ tık (Basılı): Kamera kaydırma
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <PiMouseMiddleClickFill className="text-blue-700" /> Mouse tekerleği: Yakınlaştırma
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <PiMouseLeftClickFill className="text-blue-700" /> Sol tık (Tek): Palet seçimi
-                </li>
-              </ul>
-            </div>
+      <div className="w-24 flex justify-end">
+        <label className="items-center cursor-pointer mr-2 hidden lg:flex">
+          <div className="relative">
+            <input 
+              type="checkbox" 
+              checked={isFirstPerson} 
+              onChange={toggleCameraMode} 
+              className="sr-only"
+            />
+            <div className="block bg-white/10 w-10 h-5 rounded-full border border-white/30"></div>
+            <div className={`dot absolute left-1 top-0.5 bg-orange-500 hover:bg-orange-400 w-4 h-4 rounded-full transition-transform duration-300 ${isFirstPerson ? 'transform translate-x-5' : ''}`}></div>
+          </div>
+          <span className="ml-2 text-white text-xs">{isFirstPerson ? 'Birinci Şahıs' : 'Yörüngesel'}</span>
+          <div className="relative group ml-3">
+            <BsQuestionCircle className="text-white hover:text-orange-500 transition-colors cursor-help size-5" />
+            <div className="absolute right-0 top-full mt-2 p-3 bg-white text-blue-950 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform origin-top-right pointer-events-none
+              group-hover:opacity-100 group-hover:scale-100 group-hover:visible group-hover:translate-y-0
+              opacity-0 scale-95 invisible -translate-y-2 w-[280px] text-xs z-50">
+              <p className="mb-2 text-sm font-bold text-center border-b pb-1.5">Kontrol Şeması</p>
+              
+              <div className="mb-3">
+                <p className="mb-1.5 font-bold flex items-center gap-1.5 text-orange-600 text-xs">
+                  <BsMouseFill className="text-sm" /> Yörüngesel Mod
+                </p>
+                <ul className="space-y-1.5 ml-1.5">
+                  <li className="flex items-center gap-1.5">
+                    <PiMouseLeftClickFill className="text-blue-700" /> Sol tık (Basılı): Kamera rotasyonu
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <PiMouseRightClickFill className="text-blue-700" /> Sağ tık (Basılı): Kamera kaydırma
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <PiMouseMiddleClickFill className="text-blue-700" /> Mouse tekerleği: Yakınlaştırma
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <PiMouseLeftClickFill className="text-blue-700" /> Sol tık (Tek): Palet seçimi
+                  </li>
+                </ul>
+              </div>
 
-            <div>
-              <p className="mb-1.5 font-bold flex items-center gap-1.5 text-orange-600 text-xs">
-                <FaWalking className="text-sm" /> Birinci Şahıs Modu
-              </p>
-              <ul className="space-y-1.5 ml-1.5">
-                <li className="flex items-center gap-1.5">
-                  <FaKeyboard className="text-blue-700" /> WASD / Ok Tuşları: Hareket
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <BsArrowsMove className="text-blue-700" /> Mouse hareketi: Kamera kontrolü
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <PiMouseLeftClickFill className="text-blue-700" /> Sol tık (Tek): Palet seçimi
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <FaUndo className="text-blue-700" /> R: Pozisyonu sıfırlama
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <FaCamera className="text-blue-700" /> Q: Birinci şahıs modundan çıkış
-                </li>
-              </ul>
+              <div>
+                <p className="mb-1.5 font-bold flex items-center gap-1.5 text-orange-600 text-xs">
+                  <FaWalking className="text-sm" /> Birinci Şahıs Modu
+                </p>
+                <ul className="space-y-1.5 ml-1.5">
+                  <li className="flex items-center gap-1.5">
+                    <FaKeyboard className="text-blue-700" /> WASD / Ok Tuşları: Hareket
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <BsArrowsMove className="text-blue-700" /> Mouse hareketi: Kamera kontrolü
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <PiMouseLeftClickFill className="text-blue-700" /> Sol tık (Tek): Palet seçimi
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <FaUndo className="text-blue-700" /> R: Pozisyonu sıfırlama
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <FaCamera className="text-blue-700" /> Q: Birinci şahıs modundan çıkış
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-      </label>
+        </label>
+      </div>
     </header>
   )
 }

@@ -2,7 +2,7 @@ import Image from 'next/image'
 import huskyLogo from '@/app/assets/husky-nav.png'
 import { IoClose, IoSearch, IoFilter, IoInformationCircle } from "react-icons/io5"
 import { HiSortAscending } from "react-icons/hi"
-import { FaPallet, FaRegCalendar, FaWeightHanging, FaBox, FaMapMarkerAlt } from "react-icons/fa"
+import { FaPallet, FaRegCalendar, FaWeightHanging, FaBox, FaMapMarkerAlt, FaBarcode, FaTags, FaLayerGroup, FaHistory, FaWarehouse, FaUser } from "react-icons/fa"
 import useStore from '@/store/store'
 import { useState, useMemo, useRef, useEffect } from 'react'
 
@@ -263,6 +263,9 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                 (!box.isLoadingArea || store.selectedBox.areaKey === box.areaKey);
               
               const [x, y, z] = box.boxNumber || [0, 0, 0];
+              
+              // Get all API data
+              const apiData = box._apiData || {};
 
               return (
                 <div 
@@ -277,12 +280,12 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                     if (window.innerWidth < 1024) setIsSidebarOpen(false);
                   }}
                 >
-                  {/* Box header with location info */}
+                  {/* Box header with location info - MAIN INFO */}
                   <div className="flex justify-between items-start">
                     <div className="flex-1 mr-1.5">
                       <div className="font-medium flex items-center gap-1 text-xs">
                         <FaMapMarkerAlt className="text-orange-500 flex-shrink-0" size={10} />
-                        {box.locationCode || `Palet ${box.boxNumber.join(', ')}`}
+                        {box.locationCode || apiData.lokasyonKodu || `Palet ${box.boxNumber.join(', ')}`}
                         
                         {box.isLoadingArea && (
                           <span className="px-1 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-semibold tracking-wide whitespace-nowrap ml-1">
@@ -292,7 +295,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                         )}
                       </div>
                       <div className="text-xs font-semibold text-orange-800 mt-0.5 line-clamp-1">
-                        {box.content}
+                        {box.content || apiData.stokCinsi}
                       </div>
                     </div>
                     <button 
@@ -306,64 +309,124 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                     </button>
                   </div>
 
-                  {/* Summary info row always visible */}
+                  {/* Summary info row always visible - MAIN INFO */}
                   <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-gray-600">
-                    {box.paletId && (
-                      <div className="flex items-center gap-1">
-                        <FaPallet size={9} className="text-gray-500" />
-                        <span className="truncate">{box.paletId}</span>
+                    {/* Customer Name - MAIN INFO */}
+                    {(box.customerName || apiData.cariAdi) && (
+                      <div className="flex-1 truncate">
+                        <span className="opacity-75">Firma:</span> {box.customerName || apiData.cariAdi}
                       </div>
                     )}
-                    {box.weight && (
-                      <div className="flex items-center gap-1">
-                        <FaWeightHanging size={9} className="text-gray-500" />
-                        <span>{box.weight} kg</span>
-                      </div>
-                    )}
-                    {box.quantity && (
-                      <div className="flex items-center gap-1">
+                    
+                    {/* Quantity - MAIN INFO */}
+                    {(box.quantity || apiData.toplam) && (
+                      <div className="flex items-center gap-1 whitespace-nowrap">
                         <FaBox size={9} className="text-gray-500" />
-                        <span>{box.quantity}</span>
+                        <span>{box.quantity || apiData.toplam}</span>
+                      </div>
+                    )}
+                    
+                    {/* Expiry Date - MAIN INFO */}
+                    {(box.expirationDate || apiData.skT_) && (
+                      <div className="flex items-center gap-1 whitespace-nowrap">
+                        <FaRegCalendar size={9} className="text-orange-500" />
+                        <span>{formatDate(box.expirationDate || apiData.skT_)}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Expanded details */}
+                  {/* Expanded details - ADDITIONAL INFO */}
                   {isExpanded && (
                     <div className="mt-2 pt-2 border-t text-[10px] space-y-1.5 text-gray-700 animate-fadeIn">
-                      {box.customerName && (
+                      {/* Pallet ID */}
+                      {(box.paletId || apiData.palet) && (
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-500">Firma:</span>
-                          <span className="font-medium max-w-[65%] text-right truncate">{box.customerName}</span>
+                          <span className="text-gray-500">Palet ID:</span>
+                          <span className="font-medium">{box.paletId || apiData.palet}</span>
                         </div>
                       )}
-                      {box.stockCode && (
+                      
+                      {/* Stock code */}
+                      {(box.stockCode || apiData.stokKodu) && (
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500">Stok Kodu:</span>
-                          <span className="font-medium bg-gray-50 px-1.5 py-0.5 rounded">{box.stockCode}</span>
+                          <span className="font-medium bg-gray-50 px-1.5 py-0.5 rounded">{box.stockCode || apiData.stokKodu}</span>
                         </div>
                       )}
-                      {box.expirationDate && (
+                      
+                      {/* Customer code */}
+                      {apiData.cariKodu && (
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-500">SKT:</span>
-                          <span className="font-medium flex items-center gap-1">
-                            <FaRegCalendar size={9} className="text-orange-500" />
-                            {formatDate(box.expirationDate)}
-                          </span>
+                          <span className="text-gray-500">Müşteri Kodu:</span>
+                          <span className="font-medium">{apiData.cariKodu}</span>
                         </div>
                       )}
-                      {box.status && (
+                      
+                      {/* Weight */}
+                      {(box.weight || apiData.toplamAgirlik) && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Ağırlık:</span>
+                          <span className="font-medium">{box.weight || apiData.toplamAgirlik} kg</span>
+                        </div>
+                      )}
+                      
+                      {/* Total desi */}
+                      {apiData.toplamDesi && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Toplam Desi:</span>
+                          <span className="font-medium">{apiData.toplamDesi}</span>
+                        </div>
+                      )}
+                      
+                      {/* Status */}
+                      {(box.status || apiData.durum) && (
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500">Durum:</span>
-                          <span className={`font-medium px-1.5 py-0.5 rounded-full text-white text-[9px] uppercase tracking-wider ${box.status === 'Aktif' ? 'bg-green-500' : 'bg-red-500'}`}>
-                            {box.status}
+                          <span className={`font-medium px-1.5 py-0.5 rounded-full text-white text-[9px] uppercase tracking-wider ${
+                            (box.status || apiData.durum) === 'Aktif' ? 'bg-green-500' : 'bg-red-500'
+                          }`}>
+                            {box.status || apiData.durum}
                           </span>
                         </div>
                       )}
-                      {box.entryDate && (
+                      
+                      {/* Entry date */}
+                      {(box.entryDate || apiData.girisTarihi) && (
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500">Giriş:</span>
-                          <span className="font-medium">{formatDate(box.entryDate)}</span>
+                          <span className="font-medium">{formatDate(box.entryDate || apiData.girisTarihi)}</span>
+                        </div>
+                      )}
+                      
+                      {/* Barcode */}
+                      {apiData.barkod && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Barkod:</span>
+                          <span className="font-medium bg-gray-50 px-1.5 py-0.5 rounded">{apiData.barkod}</span>
+                        </div>
+                      )}
+                      
+                      {/* Lot number */}
+                      {apiData.lotNo && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Lot No:</span>
+                          <span className="font-medium">{apiData.lotNo}</span>
+                        </div>
+                      )}
+                      
+                      {/* Location type */}
+                      {apiData.lokasyonTipi && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Lokasyon Tipi:</span>
+                          <span className="font-medium">{apiData.lokasyonTipi}</span>
+                        </div>
+                      )}
+                      
+                      {/* Description - if different from location code */}
+                      {apiData.aciklama && apiData.aciklama !== apiData.lokasyonKodu && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Açıklama:</span>
+                          <span className="font-medium">{apiData.aciklama}</span>
                         </div>
                       )}
                     </div>
