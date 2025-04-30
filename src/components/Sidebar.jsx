@@ -120,71 +120,71 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
 
   return (
     <div 
-      className={`fixed top-[60px] bottom-0 -left-0.5 bg-white shadow-xl z-40 transition-all duration-300 transform ${
+      className={`fixed top-[50px] bottom-0 -left-0.5 bg-white shadow-xl z-40 transition-all duration-300 transform ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`} 
-      style={{ width: '300px' }}
+      style={{ width: '250px' }}
     >
       {/* Header */}
-      <div className="bg-[#172554] py-2.5 shadow-md relative">
+      <div className="bg-[#172554] py-2 shadow-md relative">
         <button 
           onClick={() => setIsSidebarOpen(false)}
-          className="absolute right-3 top-5 text-white/80 hover:text-orange-500 transition-colors p-1 rounded-full hover:bg-white/10"
+          className="absolute right-2 top-4 text-white/80 hover:text-orange-500 transition-colors p-1 rounded-full hover:bg-white/10"
         >
-          <IoClose size={18} />
+          <IoClose size={16} />
         </button>
-        <div className="flex flex-col items-center justify-center gap-2">
+        <div className="flex flex-col items-center justify-center gap-1">
           <a href="https://www.b2cargo.com/online-islemler" className="cursor-pointer">
-            <div className="p-1.5 lg:pt-4">
+            <div className="p-1 lg:pt-3">
               <div className="relative group">
                 <div className="absolute inset-[25%] rounded-full opacity-0 group-hover:opacity-60 transition-opacity duration-300 bg-orange-500 blur-sm z-0"></div>
                 <Image
                   src={huskyLogo}
                   alt="Husky Logo"
-                  width={70}
-                  height={70}
+                  width={60}
+                  height={60}
                   className="object-contain relative z-10 transition-transform duration-300 group-hover:scale-105"
                   priority
                 />
               </div>
             </div>
           </a>
-          <h3 className="text-white font-bold text-md tracking-wide mt-1">Bu Depodaki Tüm Ürünler</h3>
+          <h3 className="text-white font-bold text-sm tracking-wide">Bu Depodaki Tüm Ürünler</h3>
         </div>
       </div>
 
       {/* Content Container */}
-      <div className="flex flex-col h-[calc(100%-132px)] pb-4">
+      <div className="flex flex-col h-[calc(100%-112px)] pb-2">
         {/* Search and Toggle */}
-        <div className="p-3 space-y-3 shrink-0 border-b border-gray-100">
+        <div className="p-2 space-y-2 shrink-0 border-b border-gray-100">
           <div className="relative">
             <input
               type="text"
               placeholder="Ürün, palet no veya lokasyon ara"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 text-sm rounded-lg 
+              className="w-full px-3 py-1.5 bg-gray-100 border border-gray-200 text-xs rounded-lg 
                        focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                       pr-20 pl-9 transition-all shadow-sm hover:shadow"
+                       pr-16 pl-8 transition-all shadow-sm hover:shadow"
             />
-            <IoSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <IoSearch className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
             
             {/* Filter button */}
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex gap-2">
+            <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 flex gap-1.5">
               {/* Sort button */}
               <button
                 onClick={() => setSortBy(sortBy === 'location' ? 'weight' : sortBy === 'weight' ? 'expiry' : 'location')}
-                className={`text-gray-500 hover:text-orange-500 transition-colors p-1 rounded-full hover:bg-orange-50`}
+                className={`text-gray-500 hover:text-orange-500 transition-colors p-0.5 rounded-full hover:bg-orange-50`}
                 title={`Sırala: ${sortBy === 'location' ? 'Lokasyon' : sortBy === 'weight' ? 'Ağırlık' : 'SKT'}`}
               >
-                <HiSortAscending size={17} />
+                <HiSortAscending size={15} />
               </button>
               
               <button
                 onClick={() => setFilterOpen(prev => !prev)}
-                className={`text-gray-500 hover:text-orange-500 transition-colors p-1 rounded-full hover:bg-orange-50 ${filterOpen || statusFilter !== 'all' ? 'text-orange-500 bg-orange-50' : ''}`}
+                className={`text-gray-500 hover:text-orange-500 transition-colors p-0.5 rounded-full hover:bg-orange-50 ${filterOpen || statusFilter !== 'all' ? 'text-orange-500 bg-orange-50' : ''}`}
               >
-                <IoFilter size={17} />
+                <IoFilter size={15} />
               </button>
             </div>
             
@@ -194,15 +194,15 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                 ref={filterRef}
                 className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 w-52 overflow-hidden animate-fadeIn"
               >
-                <div className="p-3 space-y-3">
+                <div className="p-2.5 space-y-2.5">
                   <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1.5">Durum Filtresi</p>
+                    <p className="text-xs font-medium text-gray-600 mb-1">Durum Filtresi</p>
                     <div className="flex gap-1">
                       {['all', 'active', 'inactive'].map(status => (
                         <button
                           key={status}
                           onClick={() => setStatusFilter(status)}
-                          className={`text-xs rounded-full px-3 py-1 flex-1 transition-colors ${
+                          className={`text-xs rounded-full px-2.5 py-0.5 flex-1 transition-colors ${
                             statusFilter === status 
                               ? 'bg-orange-500 text-white' 
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -214,7 +214,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                     </div>
                   </div>
                   <div className="pt-2 border-t border-gray-100">
-                    <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer hover:text-gray-800">
+                    <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer hover:text-gray-800">
                       <div className="relative flex items-center">
                         <input
                           type="checkbox"
@@ -223,10 +223,10 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                           onChange={() => store.toggleLoadingAreaBoxes()}
                           className="sr-only"
                         />
-                        <div className={`w-9 h-5 rounded-full transition ${
+                        <div className={`w-8 h-4 rounded-full transition ${
                           store.showLoadingAreaBoxes ? 'bg-orange-500' : 'bg-gray-300'
                         }`}></div>
-                        <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition transform ${
+                        <div className={`absolute left-0.5 top-0.5 bg-white w-3 h-3 rounded-full transition transform ${
                           store.showLoadingAreaBoxes ? 'translate-x-4' : ''
                         }`}></div>
                       </div>
@@ -240,18 +240,18 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
         </div>
 
         {/* Box List */}
-        <div className="flex-1 overflow-y-auto px-3 pb-3 pt-2">
+        <div className="flex-1 overflow-y-auto px-2 pb-2 pt-1.5">
           {/* Stats bar */}
-          <div className="flex justify-between text-xs text-gray-500 mb-3 px-2">
+          <div className="flex justify-between text-xs text-gray-500 mb-2 px-1.5">
             <span>{allBoxes.length} ürün</span>
-            <span className="italic">
+            <span className="italic text-[10px]">
               {sortBy === 'location' ? 'Lokasyona göre sıralama' : 
                sortBy === 'weight' ? 'Ağırlığa göre sıralama' : 
                'SKT\'ye göre sıralama'}
             </span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-1.5">
             {allBoxes.map((box) => {
               const boxId = getBoxId(box);
               const isExpanded = showExtraInfo[boxId];
@@ -272,7 +272,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                   }`}
                 >
                   <div 
-                    className="cursor-pointer p-3"
+                    className="cursor-pointer p-2"
                     onClick={() => {
                       store.setFocusedBox(box.boxNumber, box.isLoadingArea, box.areaKey);
                       if (window.innerWidth < 1024) setIsSidebarOpen(false);
@@ -280,19 +280,19 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                   >
                     {/* Box header with location info */}
                     <div className="flex justify-between items-start">
-                      <div className="flex-1 mr-2">
-                        <div className="font-medium flex items-center gap-1.5 text-sm">
-                          <FaMapMarkerAlt className="text-orange-500 flex-shrink-0" size={12} />
+                      <div className="flex-1 mr-1.5">
+                        <div className="font-medium flex items-center gap-1 text-xs">
+                          <FaMapMarkerAlt className="text-orange-500 flex-shrink-0" size={10} />
                           {box.locationCode || `Palet ${box.boxNumber.join(', ')}`}
                           
                           {box.isLoadingArea && (
-                            <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[10px] font-semibold tracking-wide whitespace-nowrap ml-1">
+                            <span className="px-1 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-semibold tracking-wide whitespace-nowrap ml-1">
                               {box.areaKey?.includes('front') ? 'ÖN' : 'ARKA'} 
                               {box.areaKey?.includes('Left') ? ' SOL' : ' SAĞ'}
                             </span>
                           )}
                         </div>
-                        <div className="text-sm font-semibold text-orange-800 mt-1 line-clamp-1">
+                        <div className="text-xs font-semibold text-orange-800 mt-0.5 line-clamp-1">
                           {box.content}
                         </div>
                       </div>
@@ -301,29 +301,29 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                           e.stopPropagation(); 
                           toggleExtraInfo(boxId);
                         }}
-                        className={`p-1.5 rounded-full hover:bg-gray-100 transition-colors ${isExpanded ? 'bg-gray-100' : ''}`}
+                        className={`p-1 rounded-full hover:bg-gray-100 transition-colors ${isExpanded ? 'bg-gray-100' : ''}`}
                       >
-                        <IoInformationCircle size={18} className={`${isExpanded ? 'text-orange-500' : 'text-gray-400'}`} />
+                        <IoInformationCircle size={16} className={`${isExpanded ? 'text-orange-500' : 'text-gray-400'}`} />
                       </button>
                     </div>
 
                     {/* Summary info row always visible */}
-                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1.5 mt-2.5 text-xs text-gray-600">
+                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-gray-600">
                       {box.paletId && (
-                        <div className="flex items-center gap-1.5">
-                          <FaPallet size={11} className="text-gray-500" />
+                        <div className="flex items-center gap-1">
+                          <FaPallet size={9} className="text-gray-500" />
                           <span className="truncate">{box.paletId}</span>
                         </div>
                       )}
                       {box.weight && (
-                        <div className="flex items-center gap-1.5">
-                          <FaWeightHanging size={11} className="text-gray-500" />
+                        <div className="flex items-center gap-1">
+                          <FaWeightHanging size={9} className="text-gray-500" />
                           <span>{box.weight} kg</span>
                         </div>
                       )}
                       {box.quantity && (
-                        <div className="flex items-center gap-1.5">
-                          <FaBox size={11} className="text-gray-500" />
+                        <div className="flex items-center gap-1">
+                          <FaBox size={9} className="text-gray-500" />
                           <span>{box.quantity}</span>
                         </div>
                       )}
@@ -331,7 +331,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
 
                     {/* Expanded details */}
                     {isExpanded && (
-                      <div className="mt-3 pt-2.5 border-t text-xs space-y-2 text-gray-700 animate-fadeIn">
+                      <div className="mt-2 pt-2 border-t text-[10px] space-y-1.5 text-gray-700 animate-fadeIn">
                         {box.customerName && (
                           <div className="flex justify-between items-center">
                             <span className="text-gray-500">Firma:</span>
@@ -347,8 +347,8 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                         {box.expirationDate && (
                           <div className="flex justify-between items-center">
                             <span className="text-gray-500">SKT:</span>
-                            <span className="font-medium flex items-center gap-1.5">
-                              <FaRegCalendar size={10} className="text-orange-500" />
+                            <span className="font-medium flex items-center gap-1">
+                              <FaRegCalendar size={9} className="text-orange-500" />
                               {formatDate(box.expirationDate)}
                             </span>
                           </div>
@@ -356,7 +356,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                         {box.status && (
                           <div className="flex justify-between items-center">
                             <span className="text-gray-500">Durum:</span>
-                            <span className={`font-medium px-2 py-0.5 rounded-full text-white text-[10px] uppercase tracking-wider ${box.status === 'Aktif' ? 'bg-green-500' : 'bg-red-500'}`}>
+                            <span className={`font-medium px-1.5 py-0.5 rounded-full text-white text-[9px] uppercase tracking-wider ${box.status === 'Aktif' ? 'bg-green-500' : 'bg-red-500'}`}>
                               {box.status}
                             </span>
                           </div>
@@ -376,12 +376,12 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
           </div>
           
           {allBoxes.length === 0 && (
-            <div className="text-center text-gray-500 mt-8 p-6 bg-gray-50 rounded-lg border border-gray-100 shadow-inner">
-              <div className="flex justify-center mb-3">
-                <FaBox size={32} className="text-gray-300" />
+            <div className="text-center text-gray-500 mt-6 p-4 bg-gray-50 rounded-lg border border-gray-100 shadow-inner">
+              <div className="flex justify-center mb-2">
+                <FaBox size={28} className="text-gray-300" />
               </div>
-              <p className="font-medium text-gray-600">Ürün bulunamadı</p>
-              <p className="text-xs mt-2 max-w-[80%] mx-auto">
+              <p className="font-medium text-gray-600 text-sm">Ürün bulunamadı</p>
+              <p className="text-[10px] mt-1.5 max-w-[80%] mx-auto">
                 {searchQuery ? 
                   'Arama kriterlerinize uygun ürün yok.' : 
                   'Bu depo boş ya da veriler yüklenemedi.'}
@@ -389,7 +389,7 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="mt-3 px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-xs hover:bg-orange-200 transition-colors"
+                  className="mt-2 px-2.5 py-0.5 bg-orange-100 text-orange-600 rounded-full text-[10px] hover:bg-orange-200 transition-colors"
                 >
                   Aramayı Temizle
                 </button>

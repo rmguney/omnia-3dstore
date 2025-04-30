@@ -55,29 +55,29 @@ export default function PinnedBox({ store }) {
   const internalCoords = `${store.selectedBox.x}, ${store.selectedBox.y}, ${store.selectedBox.z}`;
 
   return (
-    <div className="fixed bottom-5 right-5 text-white z-50 max-w-sm animate-fadeIn">
-      <div className="flex justify-center mb-[-12px] relative z-[51]">
+    <div className="fixed bottom-3 right-3 text-white z-50 max-w-sm animate-fadeIn">
+      <div className="flex justify-center mb-[-10px] relative z-[51]">
         <button
-          className="bg-orange-500 text-white rounded-full p-2 shadow-lg hover:bg-orange-400 transition-colors group"
+          className="bg-orange-500 text-white rounded-full p-1.5 shadow-lg hover:bg-orange-400 transition-colors"
           onClick={handleUnpin}
           title="Kaldır"
         >
-          <BsX className="text-xl" />
+          <BsX className="text-lg" />
         </button>
       </div>
-      <div className="bg-gradient-to-br from-[#081330] to-[#152144] rounded-lg shadow-lg p-4 border border-blue-900/50">
-        <div className="mb-3 pb-2 border-b border-white/10">
+      <div className="bg-gradient-to-br from-[#081330] to-[#152144] rounded-lg shadow-lg p-3 border border-blue-900/50">
+        <div className="mb-2 pb-1.5 border-b border-white/10">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <BsPin className="text-orange-400" />
-              <h3 className="font-semibold">Seçili Palet</h3>
+            <div className="flex items-center gap-1.5">
+              <BsPin className="text-orange-400 text-sm" />
+              <h3 className="font-semibold text-sm">Seçili Palet</h3>
             </div>
             {apiLocation ? (
-              <span className="text-sm bg-blue-800 px-2 py-0.5 rounded text-blue-100">
+              <span className="text-xs bg-blue-800 px-1.5 py-0.5 rounded text-blue-100">
                 {apiLocation}
               </span>
             ) : (
-              <span className="text-sm bg-blue-800 px-2 py-0.5 rounded text-blue-100">
+              <span className="text-xs bg-blue-800 px-1.5 py-0.5 rounded text-blue-100">
                 {internalCoords}
               </span>
             )}
@@ -85,36 +85,36 @@ export default function PinnedBox({ store }) {
           
           {/* Show internal coordinates in small text if API location is available */}
           {apiLocation && (
-            <div className="text-[10px] text-gray-400 text-right mt-1">
+            <div className="text-[9px] text-gray-400 text-right">
               {internalCoords}
             </div>
           )}
           
-          <div className="mt-2 text-lg font-medium text-orange-100">{box.content}</div>
+          <div className="mt-1 text-base font-medium text-orange-100">{box.content}</div>
           
           {/* Add customer name (cariAdi) prominently if available */}
           {box.customerName && (
-            <div className="mt-1 text-sm text-blue-200">
+            <div className="mt-0.5 text-xs text-blue-200">
               <span className="opacity-75">Firma:</span> {box.customerName}
             </div>
           )}
         </div>
         
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-2 text-xs">
           {/* Remove the locationCode display here since we're now showing it at the top */}
           {box.paletId && (
             <div className="col-span-2">
-              <span className="text-gray-400 block text-xs mb-0.5">Palet ID</span>
-              <span className="text-white font-medium bg-blue-900/40 px-2 py-0.5 rounded">{box.paletId}</span>
+              <span className="text-gray-400 block text-[10px] mb-0.5">Palet ID</span>
+              <span className="text-white font-medium bg-blue-900/40 px-1.5 py-0.5 rounded text-xs">{box.paletId}</span>
             </div>
           )}
           
           {/* Rest of the properties */}
           {box.weight && (
             <div>
-              <span className="text-gray-400 block text-xs mb-0.5">Ağırlık</span>
+              <span className="text-gray-400 block text-[10px]">Ağırlık</span>
               <div className="flex items-center gap-1 text-white">
-                <FaWeightHanging size={11} className="text-orange-400" />
+                <FaWeightHanging size={10} className="text-orange-400" />
                 <span className="font-medium">{box.weight} kg</span>
               </div>
             </div>
@@ -122,9 +122,9 @@ export default function PinnedBox({ store }) {
           
           {box.quantity && (
             <div>
-              <span className="text-gray-400 block text-xs mb-0.5">Miktar</span>
+              <span className="text-gray-400 block text-[10px]">Miktar</span>
               <div className="flex items-center gap-1 text-white">
-                <FaBox size={11} className="text-orange-400" />
+                <FaBox size={10} className="text-orange-400" />
                 <span className="font-medium">{box.quantity}</span>
               </div>
             </div>
@@ -132,9 +132,9 @@ export default function PinnedBox({ store }) {
           
           {box.stockCode && (
             <div>
-              <span className="text-gray-400 block text-xs mb-0.5">Stok Kodu</span>
+              <span className="text-gray-400 block text-[10px]">Stok Kodu</span>
               <div className="flex items-center gap-1 text-white">
-                <FaTags size={11} className="text-orange-400" />
+                <FaTags size={10} className="text-orange-400" />
                 <span className="font-medium">{box.stockCode}</span>
               </div>
             </div>
@@ -142,9 +142,9 @@ export default function PinnedBox({ store }) {
           
           {box.expirationDate && (
             <div>
-              <span className="text-gray-400 block text-xs mb-0.5">SKT</span>
+              <span className="text-gray-400 block text-[10px]">SKT</span>
               <div className="flex items-center gap-1 text-white">
-                <FaRegCalendar size={11} className="text-orange-400" />
+                <FaRegCalendar size={10} className="text-orange-400" />
                 <span className="font-medium">{formatDate(box.expirationDate)}</span>
               </div>
             </div>
@@ -152,8 +152,8 @@ export default function PinnedBox({ store }) {
           
           {box.status && (
             <div className="col-span-2 mt-1">
-              <span className="text-gray-400 block text-xs mb-0.5">Durum</span>
-              <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+              <span className="text-gray-400 block text-[10px]">Durum</span>
+              <span className={`inline-block px-1.5 py-px rounded-full text-[10px] font-medium ${
                 box.status === 'Aktif' ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'
               }`}>
                 {box.status}
