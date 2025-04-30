@@ -12,6 +12,16 @@ const API_ENDPOINTS = {
 };
 
 /**
+ * Determines if a location code follows the standard format (e.g., "A-1-1")
+ * @param {string} locationCode - Location code to check
+ * @returns {boolean} - True if it matches the standard format
+ */
+const isStandardLocationCode = (locationCode) => {
+  if (!locationCode || typeof locationCode !== 'string') return false;
+  return /^[A-Z]-\d+-\d+$/.test(locationCode);
+};
+
+/**
  * Maps API location code (A-1-1) to internal box number format [0,0,0]
  * @param {string} locationCode - Location code from API (e.g., "A-1-1")
  * @returns {Array} - Internal box number array [x,y,z]
@@ -90,13 +100,14 @@ const determineStore = (locationCode) => {
 const transformApiData = (apiData) => {
   if (!Array.isArray(apiData)) {
     console.error('API data is not an array:', apiData);
-    return { 'CRK-2': [], 'CRK-1': [] };
+    return { 'CRK-2': [], 'CRK-1': [], 'malKabulBoxes': [] };
   }
   
   // Pre-allocate arrays with estimated capacity
   const groupedData = {
     'CRK-2': [],
-    'CRK-1': []
+    'CRK-1': [],
+    'malKabulBoxes': [] // Special collection for non-standard boxes
   };
   
   // Create a mapping cache to avoid redundant calculations
@@ -105,6 +116,39 @@ const transformApiData = (apiData) => {
   apiData.forEach(item => {
     try {
       const locationCode = item.lokasyonKodu;
+      
+      // Skip items with location code starting with L9
+      if (locationCode && locationCode.startsWith('L9')) {
+        console.log(`Skipping item with L9 location code: ${locationCode}`);
+        return;
+      }
+      
+      // Check if location code follows standard format
+      if (!isStandardLocationCode(locationCode)) {
+        // Non-standard location, add to malKabulBoxes
+        const box = {
+          content: item.stokCinsi || 'Unknown Item',
+          present: true,
+          displayLocation: locationCode || 'Non-standard Location',
+          paletId: item.palet,
+          customerName: item.cariAdi,
+          quantity: item.toplam,
+          status: item.aktif === true ? 'Aktif' : 'İnaktif',
+          expirationDate: item.skt,
+          entryDate: item.tarih,
+          weight: item.kilo,
+          stockCode: item.stokKodu,
+          _apiData: item,
+          isFromApi: true,
+          isNonStandardLocation: true,
+          originalLocation: locationCode
+        };
+        
+        // Determine which store this should go to - use default if we can't tell
+        const store = locationCode ? determineStore(locationCode) : 'CRK-2';
+        groupedData.malKabulBoxes.push({...box, store});
+        return;
+      }
       
       // Use cached mapping if available
       if (!locationCache[locationCode]) {
@@ -123,6 +167,7 @@ const transformApiData = (apiData) => {
         
         // Essential display information
         displayLocation: locationCode || 'Unknown Location',
+        locationCode: locationCode,
         
         // Only include essential data for rendering
         paletId: item.palet,
@@ -144,11 +189,26 @@ const transformApiData = (apiData) => {
 };
 
 /**
- * Fetch pallet data from API with fallback support
+ * Add cache to prevent repeated API calls
+ */
+let apiDataCache = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 60000; // 60 seconds
+
+/**
+ * Fetch pallet data from API with fallback support and caching
  * @param {string} depoKodu - Warehouse code
  * @returns {Promise<Object>} - Transformed data grouped by store
  */
 export const fetchPalletData = async (depoKodu = 'CRK') => {
+  const now = Date.now();
+  
+  // Use cached data if it's fresh enough
+  if (apiDataCache && (now - cacheTimestamp < CACHE_DURATION)) {
+    console.log('Using cached API data');
+    return apiDataCache;
+  }
+  
   // Try proxy endpoint first, as direct API calls will likely fail with CORS
   let apiData = null;
   let lastError = null;
@@ -222,7 +282,13 @@ export const fetchPalletData = async (depoKodu = 'CRK') => {
   }
   
   // Transform API data to our internal format
-  return transformApiData(apiData);
+  const transformedData = transformApiData(apiData);
+  
+  // Update cache
+  apiDataCache = transformedData;
+  cacheTimestamp = now;
+  
+  return transformedData;
 };
 
 /**

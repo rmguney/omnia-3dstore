@@ -10,6 +10,7 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
   const controlsRef = useRef()
   const minY = 2
   const focusedBox = useStore(state => state.focusedBox)
+  const selectedStore = useStore(state => state.selectedStore)
   const store = useStore()
 
   // Add refs for animation
@@ -17,6 +18,53 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
   const targetCameraPos = useRef(new THREE.Vector3())
   const targetLookAt = useRef(new THREE.Vector3())
   const currentLookAt = useRef(new THREE.Vector3())
+  
+  // Add throttling/debouncing for camera movement
+  const lastUpdateTime = useRef(0)
+  const updateThrottle = 16 // Reduced from 50 to 16ms (60fps) for silky-smooth animation
+  
+  // Add user interaction state
+  const userInteracting = useRef(false)
+  
+  // Track if camera is still moving to block hover events
+  const lastInteractionTime = useRef(0)
+  const isMoving = useRef(false)
+  
+  // Make camera rotation state globally available
+  useEffect(() => {
+    // Add global access to camera state
+    window.cameraIsMoving = isMoving;
+    
+    // Make the release of camera movement lock more aggressive
+    return () => {
+      if (window.cameraIsMoving) {
+        window.cameraIsMoving.current = false;
+      }
+    };
+  }, [])
+
+  // Clear camera position cache when store changes
+  useEffect(() => {
+    // Reset camera position when store changes
+    if (cameraPositionCache.current) {
+      cameraPositionCache.current.clear();
+    }
+    
+    // Reset camera position to default
+    if (camera) {
+      camera.position.set(25, 11, 9);
+      camera.lookAt(0, 0, 0);
+    }
+    
+    // Reset controls if they exist
+    if (controlsRef.current) {
+      controlsRef.current.target.set(0, 0, 0);
+      controlsRef.current.update();
+    }
+    
+    // Reset animation state
+    animating.current = false;
+  }, [camera, selectedStore]);
 
   // Add lerp helper function
   const lerp = (start, end, factor) => start + (end - start) * factor;
@@ -29,44 +77,19 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
     currentLookAt.current.copy(controlsRef.current.target);
   };
 
-  // Add frame loop for smooth animation
-  useFrame(() => {
-    if (animating.current && controlsRef.current && !userInteracting.current) {
-      const SMOOTH_FACTOR = 0.05; // Adjust this value to change animation speed
-      const DISTANCE_THRESHOLD = 0.01;
+  // Cache the best camera position results to avoid recalculations
+  const cameraPositionCache = useRef(new Map())
 
-      // Update camera position
-      const newX = lerp(camera.position.x, targetCameraPos.current.x, SMOOTH_FACTOR);
-      const newY = lerp(camera.position.y, targetCameraPos.current.y, SMOOTH_FACTOR);
-      const newZ = lerp(camera.position.z, targetCameraPos.current.z, SMOOTH_FACTOR);
-      camera.position.set(newX, newY, newZ);
-
-      // Update look at target
-      const newLookAtX = lerp(currentLookAt.current.x, targetLookAt.current.x, SMOOTH_FACTOR);
-      const newLookAtY = lerp(currentLookAt.current.y, targetLookAt.current.y, SMOOTH_FACTOR);
-      const newLookAtZ = lerp(currentLookAt.current.z, targetLookAt.current.z, SMOOTH_FACTOR);
-      currentLookAt.current.set(newLookAtX, newLookAtY, newLookAtZ);
-      controlsRef.current.target.copy(currentLookAt.current);
-
-      // Check if we're close enough to stop animation
-      const positionDistance = camera.position.distanceTo(targetCameraPos.current);
-      const targetDistance = currentLookAt.current.distanceTo(targetLookAt.current);
-      
-      if (positionDistance < DISTANCE_THRESHOLD && targetDistance < DISTANCE_THRESHOLD) {
-        animating.current = false;
-      }
-
-      controlsRef.current.update();
-    }
-  });
-
-  useEffect(() => {
-    camera.position.set(25, 11, 9)  // Initial orbit camera position on page load: x=15, y=15, z=15
-    camera.lookAt(0, 0, 0)
-  }, [camera])
-
-  // Add function to find best camera position
+  // Add function to find best camera position with caching
   const findBestCameraPosition = (targetPos) => {
+    // Create a cache key from the target position
+    const cacheKey = `${Math.round(targetPos.x*100)}-${Math.round(targetPos.y*100)}-${Math.round(targetPos.z*100)}`
+    
+    // Check if we already calculated this position
+    if (cameraPositionCache.current.has(cacheKey)) {
+      return cameraPositionCache.current.get(cacheKey)
+    }
+    
     const angles = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4]
     const distances = [5, 7, 9, 11]  // Try different distances
     const heights = [3, 4, 5, 6]     // Try different heights
@@ -96,14 +119,16 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
           // If no intersections or first intersection is our target, this position is good
           if (intersects.length === 0 || 
               (intersects[0].point.distanceTo(targetVector) < 1)) {
-            return { position: cameraPos, found: true }
+            const result = { position: cameraPos, found: true }
+            cameraPositionCache.current.set(cacheKey, result)
+            return result
           }
         }
       }
     }
     
     // If no clear view found, return the default offset position
-    return {
+    const result = {
       position: new THREE.Vector3(
         targetPos.x + 5,
         targetPos.y + 3,
@@ -111,7 +136,75 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
       ),
       found: false
     }
+    
+    cameraPositionCache.current.set(cacheKey, result)
+    return result
   }
+
+  // Add frame loop for smooth animation with throttling
+  useFrame(() => {
+    if (animating.current && controlsRef.current && !userInteracting.current) {
+      const now = Date.now()
+      
+      // Throttle updates to avoid excessive calculations
+      if (now - lastUpdateTime.current < updateThrottle) {
+        return
+      }
+      
+      lastUpdateTime.current = now
+      
+      // Even smoother animation with slightly reduced acceleration
+      const SMOOTH_FACTOR = 0.2; // Reduced from 0.25 for a smoother movement
+      const DISTANCE_THRESHOLD = 0.12; // Keep same threshold
+
+      // Update camera position
+      const newX = lerp(camera.position.x, targetCameraPos.current.x, SMOOTH_FACTOR);
+      const newY = lerp(camera.position.y, targetCameraPos.current.y, SMOOTH_FACTOR);
+      const newZ = lerp(camera.position.z, targetCameraPos.current.z, SMOOTH_FACTOR);
+      camera.position.set(newX, newY, newZ);
+
+      // Update look at target - keep slightly faster than camera movement
+      const newLookAtX = lerp(currentLookAt.current.x, targetLookAt.current.x, SMOOTH_FACTOR * 1.1);
+      const newLookAtY = lerp(currentLookAt.current.y, targetLookAt.current.y, SMOOTH_FACTOR * 1.1);
+      const newLookAtZ = lerp(currentLookAt.current.z, targetLookAt.current.z, SMOOTH_FACTOR * 1.1);
+      currentLookAt.current.set(newLookAtX, newLookAtY, newLookAtZ);
+      controlsRef.current.target.copy(currentLookAt.current);
+
+      // Check if we're close enough to stop animation
+      const positionDistance = camera.position.distanceTo(targetCameraPos.current);
+      const targetDistance = currentLookAt.current.distanceTo(targetLookAt.current);
+      
+      if (positionDistance < DISTANCE_THRESHOLD && targetDistance < DISTANCE_THRESHOLD) {
+        // Animation is done - immediately enable hover interactions
+        animating.current = false;
+        isMoving.current = false;
+        
+        // Force immediate hover activation by clearing the timer completely
+        lastInteractionTime.current = 0;
+        
+        // Snap directly to final position for precision
+        camera.position.copy(targetCameraPos.current);
+        currentLookAt.current.copy(targetLookAt.current);
+        controlsRef.current.target.copy(targetLookAt.current);
+        controlsRef.current.update();
+      } else {
+        // Still animating - block hover interactions
+        isMoving.current = true;
+        lastInteractionTime.current = Date.now();
+      }
+
+      controlsRef.current.update();
+    } else if (userInteracting.current) {
+      // User is manually controlling the camera
+      isMoving.current = true;
+      lastInteractionTime.current = Date.now();
+    } else {
+      // Camera is idle - enable hover instantly (1ms instead of 5ms)
+      if (Date.now() - lastInteractionTime.current > 1) {
+        isMoving.current = false;
+      }
+    }
+  });
 
   // Update focus animation with new camera positioning
   useEffect(() => {
@@ -147,19 +240,46 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
             shelvesCenterZ;
       }
 
-      const targetPos = { x, y, z };
-      const { position: cameraPos } = findBestCameraPosition(targetPos);
+      const targetPosition = { x, y, z }; // Renamed from targetPos to targetPosition
+      const { position: cameraPos } = findBestCameraPosition(targetPosition);
 
+      // Immediately block hover interactions when animation starts
+      isMoving.current = true;
+      lastInteractionTime.current = Date.now();
+      
+      // Much smaller initial jump for smoother start
+      const startPos = new THREE.Vector3().copy(camera.position);
+      const jumpFactor = 0.2; // Reduced from 0.3 for a much smoother start
+      const jumpPos = new THREE.Vector3().lerpVectors(
+        startPos, 
+        cameraPos, 
+        jumpFactor
+      );
+      
+      // Reduce look-at target jump even further
+      const targetVector3 = new THREE.Vector3(x, y, z);
+      const currentTarget = controlsRef.current.target.clone();
+      const jumpTarget = new THREE.Vector3().lerpVectors(
+        currentTarget,
+        targetVector3,
+        0.25 // Reduced from 0.4 for smoother look-at transition
+      );
+      
+      // Start animation from the jump points
+      camera.position.copy(jumpPos);
+      controlsRef.current.target.copy(jumpTarget);
+      
+      // Set animation state
+      animating.current = true;
+
+      // Use smooth move for final part of movement
       smoothMoveCamera(
         cameraPos,
-        new THREE.Vector3(x, y, z)
+        targetVector3 // Updated to use the renamed variable
       );
     }
   }, [focusedBox, store, shelvesCenterX, shelvesCenterZ, scene, planeWidth, planeDepth]);
-
-  // Add user interaction state
-  const userInteracting = useRef(false)
-
+  
   // Update OrbitControls return
   return (
     <OrbitControls 
@@ -173,36 +293,48 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
       rotateSpeed={0.5}
       enablePan={true}
       panSpeed={0.5}
+      // Increase damping factor to reduce momentum even more - maximum damping for instant stops
+      enableDamping={true}
+      dampingFactor={0.4}
       onStart={() => {
         userInteracting.current = true;
+        isMoving.current = true;
+        lastInteractionTime.current = Date.now();
         store.clearFocusedBox();  // Clear focused box when user starts interacting
         animating.current = false;
       }}
       onEnd={() => {
         userInteracting.current = false;
+        // isMoving will be set to false after the shorter cooldown period
+        lastInteractionTime.current = Date.now();
       }}
-      onChange={(e) => {
-        const pos = e.target.object.position
-        const distanceFromCenter = Math.sqrt(pos.x * pos.x + pos.z * pos.z)
+      onChange={() => {
+        // Update timestamp on any camera change
+        lastInteractionTime.current = Date.now();
+        isMoving.current = true;
+        
+        // Handle radius constraint with immediate correction
+        const pos = camera.position;
+        const distanceFromCenter = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
 
         // Handle height constraint
         if (pos.y < minY) {
-          pos.y = minY
+          pos.y = minY;
         }
 
         // Handle radius constraint with immediate correction
         if (distanceFromCenter > radius) {
-          const scale = radius / distanceFromCenter
-          pos.x *= scale
-          pos.z *= scale
+          const scale = radius / distanceFromCenter;
+          pos.x *= scale;
+          pos.z *= scale;
           // Update target to maintain look direction
           if (controlsRef.current) {
-            const target = controlsRef.current.target
-            const targetDist = Math.sqrt(target.x * target.x + target.z * target.z)
+            const target = controlsRef.current.target;
+            const targetDist = Math.sqrt(target.x * target.x + target.z * target.z);
             if (targetDist > radius) {
-              const targetScale = radius / targetDist
-              target.x *= targetScale
-              target.z *= targetScale
+              const targetScale = radius / targetDist;
+              target.x *= targetScale;
+              target.z *= targetScale;
             }
           }
         }

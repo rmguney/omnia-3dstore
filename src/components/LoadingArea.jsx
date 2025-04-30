@@ -65,8 +65,10 @@ export default function LoadingArea({ config, planeWidth, planeDepth, offsetX, o
             ]}
             content={`${box.content} (${id})`}
             boxNumber={[px, py, pz]}
+            fullData={box}
+            isNonStandardLocation={box.isNonStandardLocation || false}
             onClick={() => store.setFocusedBox([px, py, pz], true, config.position)}
-            onPointerOver={() => onPointerOver(box.content, [px, py, pz])}
+            onPointerOver={() => onPointerOver(box.content, [px, py, pz], box)}
             onPointerOut={onPointerOut}
             isSelected={store.selectedBox && 
               store.selectedBox.isLoadingArea &&

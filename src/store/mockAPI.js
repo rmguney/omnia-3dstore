@@ -7,7 +7,7 @@ export const stores = {
     archetype: "back-to-back",
     shelvesY: 3,
     shelvesZ: 8,
-    shelvesXPerRow: [18, 18, 18, 18, 18, 18, 18, 18],
+    shelvesXPerRow: [27, 27, 27, 24, 27, 27, 27, 30],
     boxData: [
     ],
     loadingAreas: {
@@ -62,7 +62,7 @@ export const stores = {
     archetype: "back-to-back",
     shelvesY: 3,
     shelvesZ: 12,
-    shelvesXPerRow: [16, 24, 24, 24, 14, 24, 24, 24, 14, 24, 24, 16],
+    shelvesXPerRow: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
     boxData: [
     ],
     loadingAreas: {

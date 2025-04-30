@@ -43,6 +43,9 @@ const useStore = create((set, get) => ({
   
   // Flag to force using mock data (for debugging)
   useMockData: false,
+  
+  // Add flag to track API request in progress
+  isApiRequestInProgress: false,
 
   // Camera state
   isFirstPerson: false,
@@ -52,6 +55,20 @@ const useStore = create((set, get) => ({
   initializeBoxData: async () => {
     const state = get();
     
+    // Prevent multiple simultaneous API calls
+    if (state.isApiRequestInProgress) {
+      console.log('API request already in progress, skipping');
+      return;
+    }
+    
+    // Set loading flag
+    set({
+      isApiRequestInProgress: true,
+      isLoading: true,
+      hasApiError: false,
+      apiErrorMessage: null
+    });
+    
     // Make sure we're using the correct store's configuration
     const currentStore = stores[state.selectedStore];
     
@@ -59,50 +76,7 @@ const useStore = create((set, get) => ({
     set({
       ...currentStore,
       ...archetypeConfigs[currentStore.archetype],
-      isLoading: true,
-      hasApiError: false,
-      apiErrorMessage: null
     });
-    
-    // Try to fetch real data from API (unless we're forcing mock data)
-    if (!state.useMockData) {
-      try {
-        const apiData = await fetchPalletData('CRK');
-        
-        // If we got data for the selected store, use it
-        if (apiData[state.selectedStore]?.length > 0) {
-          set({ 
-            boxData: apiData[state.selectedStore],
-            isLoading: false
-          });
-          console.log(`Using API data for ${state.selectedStore}: ${apiData[state.selectedStore].length} pallets found`);
-        } else {
-          // If API returned empty data for this store, use the empty boxData from mockAPI
-          console.log(`No API data for ${state.selectedStore}, using empty box data`);
-          set({ 
-            boxData: currentStore.boxData || [],
-            isLoading: false
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching pallet data:', error);
-        
-        // On error, use empty boxData from mockAPI
-        set({ 
-          boxData: currentStore.boxData || [],
-          isLoading: false,
-          hasApiError: true,
-          apiErrorMessage: `Failed to fetch data: ${error.message}`
-        });
-      }
-    } else {
-      // Use mock data directly if forced
-      set({ 
-        boxData: currentStore.boxData || [], 
-        isLoading: false 
-      });
-      console.log('Using mock data (forced)');
-    }
     
     // Initialize loading areas with empty boxes if needed
     const loadingAreas = {};
@@ -114,6 +88,104 @@ const useStore = create((set, get) => ({
           boxes: config.boxes || []  // Use existing boxes or empty array
         };
       });
+    }
+    
+    // Try to fetch real data from API (unless we're forcing mock data)
+    if (!state.useMockData) {
+      try {
+        const apiData = await fetchPalletData('CRK');
+        
+        // If we got data for the selected store, use it
+        if (apiData[state.selectedStore]?.length > 0) {
+          set({ 
+            boxData: apiData[state.selectedStore],
+            isLoading: false,
+            isApiRequestInProgress: false
+          });
+          console.log(`Using API data for ${state.selectedStore}: ${apiData[state.selectedStore].length} pallets found`);
+          
+          // Handle non-standard location boxes for mal kabul areas
+          if (apiData.malKabulBoxes?.length > 0) {
+            console.log(`Found ${apiData.malKabulBoxes.length} non-standard location boxes for mal kabul areas`);
+            
+            // Filter to only boxes for the current store
+            const relevantMalKabulBoxes = apiData.malKabulBoxes.filter(box => 
+              box.store === state.selectedStore
+            );
+            
+            if (relevantMalKabulBoxes.length > 0) {
+              // Find all mal kabul loading areas
+              const malKabulAreas = Object.entries(loadingAreas)
+                .filter(([key, area]) => area.isMalKabul === true)
+                .map(([key]) => key);
+              
+              if (malKabulAreas.length > 0) {
+                // Distribute boxes among mal kabul areas
+                relevantMalKabulBoxes.forEach((box, index) => {
+                  // Pick a mal kabul area in round-robin fashion
+                  const areaKey = malKabulAreas[index % malKabulAreas.length];
+                  const area = loadingAreas[areaKey];
+                  
+                  // Find an empty spot in the area
+                  for (let y = 0; y < area.boxesY; y++) {
+                    for (let z = 0; z < area.boxesZ; z++) {
+                      for (let x = 0; x < area.boxesX; x++) {
+                        // Check if this position is already occupied
+                        const isOccupied = area.boxes.some(existingBox => 
+                          existingBox.boxNumber[0] === x && 
+                          existingBox.boxNumber[1] === y && 
+                          existingBox.boxNumber[2] === z
+                        );
+                        
+                        if (!isOccupied) {
+                          // Add box to this position
+                          area.boxes.push({
+                            ...box,
+                            boxNumber: [x, y, z],
+                            content: `${box.content || 'Unknown'} (${box.originalLocation || 'Non-Std'})`
+                          });
+                          return; // Exit the loops after placing the box
+                        }
+                      }
+                    }
+                  }
+                });
+                
+                console.log(`Distributed ${relevantMalKabulBoxes.length} non-standard boxes to mal kabul areas`);
+              } else {
+                console.log(`No mal kabul areas found for non-standard boxes in ${state.selectedStore}`);
+              }
+            }
+          }
+        } else {
+          // If API returned empty data for this store, use the empty boxData from mockAPI
+          console.log(`No API data for ${state.selectedStore}, using empty box data`);
+          set({ 
+            boxData: currentStore.boxData || [],
+            isLoading: false,
+            isApiRequestInProgress: false
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching pallet data:', error);
+        
+        // On error, use empty boxData from mockAPI
+        set({ 
+          boxData: currentStore.boxData || [],
+          isLoading: false,
+          isApiRequestInProgress: false,
+          hasApiError: true,
+          apiErrorMessage: `Failed to fetch data: ${error.message}`
+        });
+      }
+    } else {
+      // Use mock data directly if forced
+      set({ 
+        boxData: currentStore.boxData || [], 
+        isLoading: false,
+        isApiRequestInProgress: false 
+      });
+      console.log('Using mock data (forced)');
     }
     
     set({ loadingAreas });
@@ -202,7 +274,16 @@ const useStore = create((set, get) => ({
 
   // Store switching
   switchStore: (storeKey) => {
-    set({ selectedStore: storeKey });
+    // Clear out old data before setting the new store
+    set({ 
+      selectedStore: storeKey,
+      boxData: [], // Clear box data to prevent overlaps
+      focusedBox: null, // Reset focused box
+      selectedBox: null, // Reset selected box
+      isApiRequestInProgress: false // Reset API request state
+    });
+    
+    // Then initialize the new store's data
     const state = get();
     state.initializeBoxData();
   },

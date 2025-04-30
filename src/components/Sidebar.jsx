@@ -262,114 +262,112 @@ export default function Sidebar({ isSidebarOpen, setIsSidebarOpen, store }) {
                 store.selectedBox.isLoadingArea === !!box.isLoadingArea &&
                 (!box.isLoadingArea || store.selectedBox.areaKey === box.areaKey);
               
+              const [x, y, z] = box.boxNumber || [0, 0, 0];
+
               return (
                 <div 
-                  key={boxId}
-                  className={`rounded-lg overflow-hidden shadow-sm border transition-all duration-150 ${
-                    isSelected
-                      ? 'border-orange-400 bg-orange-50 shadow-md'
-                      : 'border-gray-200 hover:border-orange-200 hover:bg-orange-50/30'
+                  key={`box-${store.selectedStore}-${x}-${y}-${z}`}
+                  className={`p-3 mb-2 rounded cursor-pointer ${
+                    isSelected ? 
+                      'bg-orange-100 border-l-4 border-orange-500' : 
+                      'bg-white hover:bg-gray-50'
                   }`}
+                  onClick={() => {
+                    store.setFocusedBox(box.boxNumber, box.isLoadingArea, box.areaKey);
+                    if (window.innerWidth < 1024) setIsSidebarOpen(false);
+                  }}
                 >
-                  <div 
-                    className="cursor-pointer p-2"
-                    onClick={() => {
-                      store.setFocusedBox(box.boxNumber, box.isLoadingArea, box.areaKey);
-                      if (window.innerWidth < 1024) setIsSidebarOpen(false);
-                    }}
-                  >
-                    {/* Box header with location info */}
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 mr-1.5">
-                        <div className="font-medium flex items-center gap-1 text-xs">
-                          <FaMapMarkerAlt className="text-orange-500 flex-shrink-0" size={10} />
-                          {box.locationCode || `Palet ${box.boxNumber.join(', ')}`}
-                          
-                          {box.isLoadingArea && (
-                            <span className="px-1 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-semibold tracking-wide whitespace-nowrap ml-1">
-                              {box.areaKey?.includes('front') ? 'ÖN' : 'ARKA'} 
-                              {box.areaKey?.includes('Left') ? ' SOL' : ' SAĞ'}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs font-semibold text-orange-800 mt-0.5 line-clamp-1">
-                          {box.content}
-                        </div>
+                  {/* Box header with location info */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 mr-1.5">
+                      <div className="font-medium flex items-center gap-1 text-xs">
+                        <FaMapMarkerAlt className="text-orange-500 flex-shrink-0" size={10} />
+                        {box.locationCode || `Palet ${box.boxNumber.join(', ')}`}
+                        
+                        {box.isLoadingArea && (
+                          <span className="px-1 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-semibold tracking-wide whitespace-nowrap ml-1">
+                            {box.areaKey?.includes('front') ? 'ÖN' : 'ARKA'} 
+                            {box.areaKey?.includes('Left') ? ' SOL' : ' SAĞ'}
+                          </span>
+                        )}
                       </div>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation(); 
-                          toggleExtraInfo(boxId);
-                        }}
-                        className={`p-1 rounded-full hover:bg-gray-100 transition-colors ${isExpanded ? 'bg-gray-100' : ''}`}
-                      >
-                        <IoInformationCircle size={16} className={`${isExpanded ? 'text-orange-500' : 'text-gray-400'}`} />
-                      </button>
+                      <div className="text-xs font-semibold text-orange-800 mt-0.5 line-clamp-1">
+                        {box.content}
+                      </div>
                     </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation(); 
+                        toggleExtraInfo(boxId);
+                      }}
+                      className={`p-1 rounded-full hover:bg-gray-100 transition-colors ${isExpanded ? 'bg-gray-100' : ''}`}
+                    >
+                      <IoInformationCircle size={16} className={`${isExpanded ? 'text-orange-500' : 'text-gray-400'}`} />
+                    </button>
+                  </div>
 
-                    {/* Summary info row always visible */}
-                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-gray-600">
-                      {box.paletId && (
-                        <div className="flex items-center gap-1">
-                          <FaPallet size={9} className="text-gray-500" />
-                          <span className="truncate">{box.paletId}</span>
-                        </div>
-                      )}
-                      {box.weight && (
-                        <div className="flex items-center gap-1">
-                          <FaWeightHanging size={9} className="text-gray-500" />
-                          <span>{box.weight} kg</span>
-                        </div>
-                      )}
-                      {box.quantity && (
-                        <div className="flex items-center gap-1">
-                          <FaBox size={9} className="text-gray-500" />
-                          <span>{box.quantity}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Expanded details */}
-                    {isExpanded && (
-                      <div className="mt-2 pt-2 border-t text-[10px] space-y-1.5 text-gray-700 animate-fadeIn">
-                        {box.customerName && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-500">Firma:</span>
-                            <span className="font-medium max-w-[65%] text-right truncate">{box.customerName}</span>
-                          </div>
-                        )}
-                        {box.stockCode && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-500">Stok Kodu:</span>
-                            <span className="font-medium bg-gray-50 px-1.5 py-0.5 rounded">{box.stockCode}</span>
-                          </div>
-                        )}
-                        {box.expirationDate && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-500">SKT:</span>
-                            <span className="font-medium flex items-center gap-1">
-                              <FaRegCalendar size={9} className="text-orange-500" />
-                              {formatDate(box.expirationDate)}
-                            </span>
-                          </div>
-                        )}
-                        {box.status && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-500">Durum:</span>
-                            <span className={`font-medium px-1.5 py-0.5 rounded-full text-white text-[9px] uppercase tracking-wider ${box.status === 'Aktif' ? 'bg-green-500' : 'bg-red-500'}`}>
-                              {box.status}
-                            </span>
-                          </div>
-                        )}
-                        {box.entryDate && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-500">Giriş:</span>
-                            <span className="font-medium">{formatDate(box.entryDate)}</span>
-                          </div>
-                        )}
+                  {/* Summary info row always visible */}
+                  <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-gray-600">
+                    {box.paletId && (
+                      <div className="flex items-center gap-1">
+                        <FaPallet size={9} className="text-gray-500" />
+                        <span className="truncate">{box.paletId}</span>
+                      </div>
+                    )}
+                    {box.weight && (
+                      <div className="flex items-center gap-1">
+                        <FaWeightHanging size={9} className="text-gray-500" />
+                        <span>{box.weight} kg</span>
+                      </div>
+                    )}
+                    {box.quantity && (
+                      <div className="flex items-center gap-1">
+                        <FaBox size={9} className="text-gray-500" />
+                        <span>{box.quantity}</span>
                       </div>
                     )}
                   </div>
+
+                  {/* Expanded details */}
+                  {isExpanded && (
+                    <div className="mt-2 pt-2 border-t text-[10px] space-y-1.5 text-gray-700 animate-fadeIn">
+                      {box.customerName && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Firma:</span>
+                          <span className="font-medium max-w-[65%] text-right truncate">{box.customerName}</span>
+                        </div>
+                      )}
+                      {box.stockCode && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Stok Kodu:</span>
+                          <span className="font-medium bg-gray-50 px-1.5 py-0.5 rounded">{box.stockCode}</span>
+                        </div>
+                      )}
+                      {box.expirationDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">SKT:</span>
+                          <span className="font-medium flex items-center gap-1">
+                            <FaRegCalendar size={9} className="text-orange-500" />
+                            {formatDate(box.expirationDate)}
+                          </span>
+                        </div>
+                      )}
+                      {box.status && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Durum:</span>
+                          <span className={`font-medium px-1.5 py-0.5 rounded-full text-white text-[9px] uppercase tracking-wider ${box.status === 'Aktif' ? 'bg-green-500' : 'bg-red-500'}`}>
+                            {box.status}
+                          </span>
+                        </div>
+                      )}
+                      {box.entryDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Giriş:</span>
+                          <span className="font-medium">{formatDate(box.entryDate)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

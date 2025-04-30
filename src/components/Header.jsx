@@ -33,7 +33,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
   }, []);
 
   return (
-    <header className="flex justify-between items-center p-2.5 bg-gradient-to-r from-[#172554] to-[#2e1754] text-white shadow-md fixed top-0 left-0 w-full z-50">
+    <header className="flex justify-between items-center p-2.5 bg-gradient-to-r from-[#172554] to-[#2e1754] text-white shadow-xl fixed top-0 left-0 w-full z-50">
       {/* Left section - Just sidebar toggle now */}
       <div className="flex items-center">
         <button
@@ -54,7 +54,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
           <button
             ref={buttonRef}
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="px-3 py-1 bg-transparent text-white hover:text-orange-400 transition-colors duration-200 font-bold text-lg rounded flex items-center gap-1.5 tracking-wider border border-transparent hover:border-white/20 hover:bg-white/5"
+            className="px-3 py-1 bg-transparent text-white hover:text-orange-400 transition-colors duration-200 font-bold text-base rounded flex items-center gap-1.5 tracking-wider border border-transparent hover:border-white/20 hover:bg-white/5"
           >
             {stores[storeToDisplay]?.storeName || "Depo Seçin"}
             <svg

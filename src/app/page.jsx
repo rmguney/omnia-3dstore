@@ -51,12 +51,22 @@ export default function App() {
     setIsFirstPerson(!isFirstPerson)
   }
 
+  // Handle store change with proper cleanup
   const handleStoreChange = (e) => {
     const storeKey = e.target.value
+    
+    // Reset UI state that might be tied to the old store
+    setHoveredBox(null);
+    setHoveredBoxNumber(null);
+    
+    // Update store selection
     setSelectedStore(storeKey)
+    
+    // Switch store in global state
     store.switchStore(storeKey)
   }
 
+  // Update Link component to have a proper class and style
   return (
     <>
       <Header 
@@ -97,10 +107,12 @@ export default function App() {
 
       <PinnedBox store={store} />
 
-      <Link href="/parameters" >
-        Parametre Testi
-        <br/>
-        <small className="px-4 py-2 rounded fixed bottom-5 right-5 z-30 hidden xl:block text-gray-700">Dev Beta 0.1.0</small>
+      <Link 
+        href="/parameters" 
+        className="inline-block px-4 py-2 mt-4 text-blue-600 hover:underline">
+      <small className="px-4 py-2 rounded fixed bottom-5 right-5 z-30 hidden xl:block text-gray-700">
+        Dev Beta 0.2.0
+      </small>      
       </Link>
     </>
   )

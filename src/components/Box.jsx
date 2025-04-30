@@ -1,9 +1,9 @@
 'use client'
-import { useRef, useState, useMemo } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useCursor } from '@react-three/drei'
 import * as THREE from 'three'
 
-// Create shared geometries and materials once at module level
+// Create shared geometries once at module level
 const sharedGeometries = {
   box: new THREE.BoxGeometry(1, 1, 1),
   topPlank: new THREE.BoxGeometry(0.4, 0.05, 1.1),
@@ -12,7 +12,8 @@ const sharedGeometries = {
   tapeTop: new THREE.PlaneGeometry(1.0, 0.15)
 }
 
-const createSharedMaterials = () => ({
+// Create shared materials once at module level
+const sharedMaterials = {
   box: new THREE.MeshStandardMaterial({
     roughness: 1,
     transparent: true,
@@ -27,32 +28,70 @@ const createSharedMaterials = () => ({
     roughness: 0.8, 
     side: THREE.DoubleSide 
   })
-})
-
-// Cache for material instances
-const materialCache = {
-  normal: createSharedMaterials(),
-  selected: createSharedMaterials(),
-  hovered: createSharedMaterials()
 }
 
-// Initialize colors for cached materials
-materialCache.normal.box.color.set('#fff')
-materialCache.selected.box.color.set('#fdba74')
-materialCache.hovered.box.color.set('#fed7aa')
+// Create material instances for different box types
+const malKabulMaterial = sharedMaterials.box.clone();
+malKabulMaterial.color.set('#fde68a'); // Light yellow for non-standard boxes
 
-export default function Box({ onClick, isSelected, content, boxNumber, fullData, onPointerOver, onPointerOut, ...props }) {
+export default function Box({ onClick, isSelected, content, boxNumber, fullData, onPointerOver, onPointerOut, isNonStandardLocation = false, ...props }) {
   const ref = useRef()
   const [hovered, setHovered] = useState(false)
+  
+  // Track current box state with refs to avoid unnecessary re-renders
+  const boxStateRef = useRef({ 
+    isSelected, 
+    isHovered: false, 
+    isNonStandardLocation 
+  });
+  
   useCursor(hovered)
   
-  // Choose the right material based on state
-  const materials = useMemo(() => {
-    if (isSelected) return materialCache.selected
-    if (hovered) return materialCache.hovered
-    return materialCache.normal
-  }, [isSelected, hovered])
-
+  // Store the box's current color in a ref to avoid unnecessary updates
+  const currentColorRef = useRef(isNonStandardLocation ? '#fde68a' : '#fff');
+  
+  // Create local box material that's isolated to this instance
+  const boxMaterial = useRef(
+    isNonStandardLocation ? malKabulMaterial.clone() : sharedMaterials.box.clone()
+  );
+  
+  // Update box material color when state changes
+  useEffect(() => {
+    const stateChanged = 
+      boxStateRef.current.isSelected !== isSelected || 
+      boxStateRef.current.isHovered !== hovered ||
+      boxStateRef.current.isNonStandardLocation !== isNonStandardLocation;
+      
+    if (stateChanged) {
+      boxStateRef.current = { isSelected, isHovered: hovered, isNonStandardLocation };
+      
+      // Determine the new color based on state
+      let newColor;
+      if (isNonStandardLocation) {
+        newColor = isSelected ? '#fbbf24' : hovered ? '#fcd34d' : '#fde68a';
+      } else {
+        newColor = isSelected ? '#fdba74' : hovered ? '#fed7aa' : '#fff';
+      }
+      
+      // Only update if color actually changed
+      if (newColor !== currentColorRef.current) {
+        boxMaterial.current.color.set(newColor);
+        currentColorRef.current = newColor;
+      }
+    }
+  }, [isSelected, hovered, isNonStandardLocation]);
+  
+  // Check if camera is rotating before processing hover events - with super aggressive check
+  const isCameraStill = () => {
+    // Aggressive check: if the feature exists at all, trust it completely
+    if (typeof window !== 'undefined' && window.cameraIsMoving) {
+      return !window.cameraIsMoving.current;
+    }
+    return true;
+  };
+  
+  // Eliminate debounce completely for instant response when camera stops
+  
   return (
     <group {...props}>
       {/* Main storage box with tape */}
@@ -62,22 +101,36 @@ export default function Box({ onClick, isSelected, content, boxNumber, fullData,
           receiveShadow
           castShadow
           onClick={(e) => (e.stopPropagation(), onClick())}
-          onPointerOver={(e) => (e.stopPropagation(), setHovered(true), onPointerOver(content, boxNumber, fullData))}
-          onPointerOut={() => (setHovered(false), onPointerOut())}>
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            
+            // Complete skip of hover handling during camera movement
+            if (!isCameraStill()) return;
+            
+            // Once camera is still, process hover immediately
+            if (!hovered) {
+              setHovered(true);
+              onPointerOver(content, boxNumber, fullData);
+            }
+          }}
+          onPointerOut={() => {
+            setHovered(false);
+            onPointerOut();
+          }}>
           <primitive object={sharedGeometries.box} />
-          <primitive object={materials.box} />
+          <primitive object={boxMaterial.current} attach="material" />
         </mesh>
 
         {/* Tape strips */}
         <mesh position={[0, 0.501, 0]} rotation={[-Math.PI/2, 0, 0]} receiveShadow>
           <primitive object={sharedGeometries.tapeTop} />
-          <primitive object={materials.tape} />
+          <primitive object={sharedMaterials.tape} attach="material" />
         </mesh>
 
         {[-0.501, 0.501].map((x, i) => (
           <mesh key={i} position={[x, 0, 0]} rotation={[0, Math.PI/2, 0]} receiveShadow>
             <primitive object={sharedGeometries.tapeSide} />
-            <primitive object={materials.tape} />
+            <primitive object={sharedMaterials.tape} attach="material" />
           </mesh>
         ))}
       </group>
@@ -88,14 +141,14 @@ export default function Box({ onClick, isSelected, content, boxNumber, fullData,
         {[-0.35, 0.35].map((x, i) => (
           <mesh key={`top-${i}`} position={[x, -0.075, 0]} castShadow receiveShadow>
             <primitive object={sharedGeometries.topPlank} />
-            <primitive object={materials.pallet} />
+            <primitive object={sharedMaterials.pallet} attach="material" />
           </mesh>
         ))}
         {/* Bottom planks */}
         {[-0.35, 0.35].map((z, i) => (
           <mesh key={`bottom-${i}`} position={[0, -0.125, z]} castShadow receiveShadow>
             <primitive object={sharedGeometries.bottomPlank} />
-            <primitive object={materials.pallet} />
+            <primitive object={sharedMaterials.pallet} attach="material" />
           </mesh>
         ))}
       </group>
