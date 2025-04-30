@@ -93,6 +93,111 @@ const determineStore = (locationCode) => {
 };
 
 /**
+ * Extract dimension data from location codes to determine max shelving size
+ * @param {Array} apiData - Raw data from the API
+ * @returns {Object} - Max dimensions by store
+ */
+const extractDimensionsFromLocationCodes = (apiData) => {
+  if (!Array.isArray(apiData)) return { 'CRK-1': {}, 'CRK-2': {} };
+  
+  // Initialize dimension tracking for each store
+  const dimensions = {
+    'CRK-1': { 
+      maxX: 0, 
+      maxY: 0, 
+      maxZ: 0, 
+      sectionLetters: new Set(),
+      // Add per-Z tracking arrays
+      maxXPerZ: {} 
+    },
+    'CRK-2': { 
+      maxX: 0, 
+      maxY: 0, 
+      maxZ: 0, 
+      sectionLetters: new Set(),
+      // Add per-Z tracking arrays
+      maxXPerZ: {} 
+    }
+  };
+  
+  apiData.forEach(item => {
+    const locationCode = item.lokasyonKodu;
+    if (!isStandardLocationCode(locationCode)) return;
+    
+    try {
+      // Parse the location code
+      const parts = locationCode.split('-');
+      if (parts.length !== 3) return;
+      
+      const section = parts[0];          // 'A', 'B', etc.
+      const position = parseInt(parts[1], 10); // API's second digit
+      const level = parseInt(parts[2], 10);    // API's third digit
+      
+      // Skip invalid data
+      if (isNaN(position) || isNaN(level)) return;
+      
+      // Determine which store this belongs to
+      const store = determineStore(locationCode);
+      
+      // Track section letters
+      dimensions[store].sectionLetters.add(section);
+      
+      // Update global max dimensions
+      dimensions[store].maxX = Math.max(dimensions[store].maxX, position);
+      dimensions[store].maxY = Math.max(dimensions[store].maxY, level);
+      
+      // Calculate z-index based on section letter
+      const zIndex = section.charCodeAt(0) - (store === 'CRK-2' ? 'I'.charCodeAt(0) : 'A'.charCodeAt(0));
+      dimensions[store].maxZ = Math.max(dimensions[store].maxZ, zIndex + 1); // +1 because it's 0-indexed
+      
+      // Update per-Z maximum X value
+      if (!dimensions[store].maxXPerZ[zIndex]) {
+        dimensions[store].maxXPerZ[zIndex] = position;
+      } else {
+        dimensions[store].maxXPerZ[zIndex] = Math.max(dimensions[store].maxXPerZ[zIndex], position);
+      }
+    } catch (error) {
+      console.warn(`Error parsing dimensions from ${locationCode}:`, error);
+    }
+  });
+  
+  // Convert section letter sets to arrays and sort for visualization
+  dimensions['CRK-1'].sectionLetters = Array.from(dimensions['CRK-1'].sectionLetters).sort();
+  dimensions['CRK-2'].sectionLetters = Array.from(dimensions['CRK-2'].sectionLetters).sort();
+  
+  // Generate shelvesXPerRow for each Z level using per-row maximums
+  Object.keys(dimensions).forEach(store => {
+    const shelvesXPerRow = [];
+    
+    // Make sure we have a reasonable maxZ value
+    if (dimensions[store].maxZ <= 0) {
+      dimensions[store].maxZ = 1; // Default to at least 1 row
+    }
+    
+    // Use the per-Z maximums to populate the array
+    for (let z = 0; z < dimensions[store].maxZ; z++) {
+      // Use the specific maximum for this Z level or a reasonable fallback
+      const maxForThisRow = dimensions[store].maxXPerZ[z] || dimensions[store].maxX;
+      
+      // Ensure we have a positive number for row length
+      const rowLength = maxForThisRow > 0 ? maxForThisRow : 10;
+      shelvesXPerRow.push(rowLength);
+    }
+    
+    dimensions[store].shelvesXPerRow = shelvesXPerRow;
+    
+    console.log(`${store} dimensions detected:`, {
+      shelvesY: dimensions[store].maxY,
+      shelvesZ: dimensions[store].maxZ,
+      sections: dimensions[store].sectionLetters.join(','),
+      shelvesXPerRow: shelvesXPerRow
+    });
+  });
+  
+  return dimensions;
+};
+
+/**
  * Transforms API response to internal data format with optimized processing
  * @param {Array} apiData - Raw data from the API
  * @returns {Object} - Transformed data grouped by store
@@ -100,14 +205,18 @@ const determineStore = (locationCode) => {
 const transformApiData = (apiData) => {
   if (!Array.isArray(apiData)) {
     console.error('API data is not an array:', apiData);
-    return { 'CRK-2': [], 'CRK-1': [], 'malKabulBoxes': [] };
+    return { 'CRK-2': [], 'CRK-1': [], 'malKabulBoxes': [], dimensions: { 'CRK-1': {}, 'CRK-2': {} } };
   }
+  
+  // Extract dimension data from location codes
+  const dimensions = extractDimensionsFromLocationCodes(apiData);
   
   // Pre-allocate arrays with estimated capacity
   const groupedData = {
     'CRK-2': [],
     'CRK-1': [],
-    'malKabulBoxes': [] // Special collection for non-standard boxes
+    'malKabulBoxes': [], // Special collection for non-standard boxes
+    dimensions // Include the dimension data for store configuration
   };
   
   // Create a mapping cache to avoid redundant calculations

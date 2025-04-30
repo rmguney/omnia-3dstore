@@ -91,27 +91,53 @@ export default function Scene({ onPointerOver, onPointerOut }) {
     };
     
     try {
-      const shelvesXPerRow = store.shelvesXPerRow || [0];
-      const shelfWidth = Math.max(...shelvesXPerRow) * store.gapX;
-      const totalWidth = shelfWidth + store.widthOffsetStart + store.widthOffsetEnd;
+      // Handle potentially empty or undefined shelvesXPerRow
+      const shelvesXPerRow = Array.isArray(store.shelvesXPerRow) && store.shelvesXPerRow.length > 0 
+        ? store.shelvesXPerRow 
+        : [10]; // Fallback to reasonable default
+        
+      // Ensure store.gapX is a valid number
+      const gapX = typeof store.gapX === 'number' ? store.gapX : 1.51;
+      
+      // Calculate maximum width from the largest X value
+      const shelfWidth = Math.max(...shelvesXPerRow) * gapX;
+      const totalWidth = shelfWidth + 
+        (typeof store.widthOffsetStart === 'number' ? store.widthOffsetStart : 0) + 
+        (typeof store.widthOffsetEnd === 'number' ? store.widthOffsetEnd : 0);
+      
+      // Ensure store.gapZ is a valid number
+      const gapZ = typeof store.gapZ === 'number' ? store.gapZ : 9;
+      const backGap = typeof store.backGap === 'number' ? store.backGap : 1.5;
       
       if (store.archetype === 'drive') {
-        const totalDepth = store.shelvesZ * store.gapZ + store.depthOffsetStart + store.depthOffsetEnd;
+        // Ensure store.shelvesZ is a valid number
+        const shelvesZ = typeof store.shelvesZ === 'number' ? store.shelvesZ : 1;
+        
+        const totalDepth = shelvesZ * gapZ + 
+          (typeof store.depthOffsetStart === 'number' ? store.depthOffsetStart : 0) + 
+          (typeof store.depthOffsetEnd === 'number' ? store.depthOffsetEnd : 0);
+          
         return {
           width: totalWidth || defaults.width,
           depth: totalDepth || defaults.depth,
-          offsetX: (store.widthOffsetEnd - store.widthOffsetStart) / 2,
-          offsetZ: (store.depthOffsetEnd - store.depthOffsetStart) / 2
+          offsetX: ((store.widthOffsetEnd || 0) - (store.widthOffsetStart || 0)) / 2,
+          offsetZ: ((store.depthOffsetEnd || 0) - (store.depthOffsetStart || 0)) / 2
         };
       } else {
-        const backToBackDepth = store.gapZ + store.backGap;
-        const totalPairsDepth = Math.ceil(store.shelvesZ / 2) * backToBackDepth;
-        const totalDepth = totalPairsDepth + store.depthOffsetStart + store.depthOffsetEnd;
+        // Ensure store.shelvesZ is a valid number
+        const shelvesZ = typeof store.shelvesZ === 'number' ? store.shelvesZ : 1;
+        
+        const backToBackDepth = gapZ + backGap;
+        const totalPairsDepth = Math.ceil(shelvesZ / 2) * backToBackDepth;
+        const totalDepth = totalPairsDepth + 
+          (typeof store.depthOffsetStart === 'number' ? store.depthOffsetStart : 0) + 
+          (typeof store.depthOffsetEnd === 'number' ? store.depthOffsetEnd : 0);
+          
         return {
           width: totalWidth || defaults.width,
           depth: totalDepth || defaults.depth,
-          offsetX: (store.widthOffsetEnd - store.widthOffsetStart) / 2,
-          offsetZ: (store.depthOffsetEnd - store.depthOffsetStart) / 2
+          offsetX: ((store.widthOffsetEnd || 0) - (store.widthOffsetStart || 0)) / 2,
+          offsetZ: ((store.depthOffsetEnd || 0) - (store.depthOffsetStart || 0)) / 2
         };
       }
     } catch (error) {
@@ -195,8 +221,25 @@ export default function Scene({ onPointerOver, onPointerOut }) {
       }
       
       return Array.from({ length: store.shelvesZ }, (_, z) =>
-        Array.from({ length: store.shelvesY }, (_, y) =>
-          Array.from({ length: store.shelvesXPerRow[z] || 0 }, (_, x) => {
+        Array.from({ length: store.shelvesY }, (_, y) => {
+          // Get the appropriate number of shelves for this row with fallback
+          let rowLength = 0;
+          
+          if (z < store.shelvesXPerRow.length) {
+            // Use the specific value for this row when it exists
+            rowLength = store.shelvesXPerRow[z];
+          } else {
+            // Use a fallback when the row exceeds the array length
+            // First try the last defined row length, then try maximum, then default to 10
+            const lastRowLength = store.shelvesXPerRow[store.shelvesXPerRow.length - 1];
+            const maxRowLength = Math.max(...store.shelvesXPerRow);
+            rowLength = lastRowLength || maxRowLength || 10;
+            
+            // Log a warning when this happens to help debug
+            console.warn(`Missing shelvesXPerRow value for z=${z}, using fallback value: ${rowLength}`);
+          }
+          
+          return Array.from({ length: rowLength }, (_, x) => {
             // Skip if not in visible range (virtualization)
             if (!isInVisibleRange(x, z)) return null;
             
@@ -236,7 +279,7 @@ export default function Scene({ onPointerOver, onPointerOut }) {
               </group>
             );
           }).filter(Boolean) // Remove null elements
-        )
+        })
       );
     } catch (error) {
       console.error("Error rendering boxes:", error);

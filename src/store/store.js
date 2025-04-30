@@ -51,7 +51,7 @@ const useStore = create((set, get) => ({
   isFirstPerson: false,
   toggleCameraMode: () => set(state => ({ isFirstPerson: !state.isFirstPerson })),
 
-  // Modified to work without tempBoxPopulator and without demo boxes
+  // Modified to work with dynamic dimensions from API data
   initializeBoxData: async () => {
     const state = get();
     
@@ -97,7 +97,31 @@ const useStore = create((set, get) => ({
         
         // If we got data for the selected store, use it
         if (apiData[state.selectedStore]?.length > 0) {
+          // Apply dynamic dimensions from API data if available
+          let dynamicConfig = {};
+          
+          if (apiData.dimensions && apiData.dimensions[state.selectedStore]) {
+            const storeDimensions = apiData.dimensions[state.selectedStore];
+            
+            // Only apply dimensions if they are valid and reasonable
+            if (storeDimensions.maxY > 0 && storeDimensions.maxZ > 0) {
+              console.log(`Applying dynamic dimensions for ${state.selectedStore}:`, storeDimensions);
+              
+              dynamicConfig = {
+                shelvesY: storeDimensions.maxY,
+                shelvesZ: storeDimensions.maxZ
+              };
+              
+              // Only apply shelvesXPerRow if it's a valid array with content
+              if (Array.isArray(storeDimensions.shelvesXPerRow) && 
+                  storeDimensions.shelvesXPerRow.length > 0) {
+                dynamicConfig.shelvesXPerRow = storeDimensions.shelvesXPerRow;
+              }
+            }
+          }
+          
           set({ 
+            ...dynamicConfig, // Apply dynamic dimensions first
             boxData: apiData[state.selectedStore],
             isLoading: false,
             isApiRequestInProgress: false
@@ -316,4 +340,4 @@ const useStore = create((set, get) => ({
   },
 }));
 
-export default useStore
+export default useStore;

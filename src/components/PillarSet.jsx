@@ -41,6 +41,19 @@ export default function PillarSet({ rowIndex, shelvesCenterX, shelvesCenterZ }) 
     : (rowIndex % 2 === 0 ? 0 : store.gapZ) + 
       Math.floor(rowIndex / 2) * (store.backGap + store.gapZ) - 
       shelvesCenterZ;
+      
+  // Get the appropriate number of shelves for this row with fallback
+  let rowLength = 0;
+  
+  if (rowIndex < store.shelvesXPerRow.length) {
+    // Use specific value for this row
+    rowLength = store.shelvesXPerRow[rowIndex];
+  } else {
+    // Use fallback values in priority order
+    const lastRowLength = store.shelvesXPerRow[store.shelvesXPerRow.length - 1];
+    const maxRowLength = Math.max(...store.shelvesXPerRow);
+    rowLength = lastRowLength || maxRowLength || 10;
+  }
 
   return (
     <group key={`pillars-${rowIndex}`}>
@@ -63,14 +76,14 @@ export default function PillarSet({ rowIndex, shelvesCenterX, shelvesCenterZ }) 
       {/* End pillars */}
       <Pillar 
         position={[
-          -shelvesCenterX + (store.shelvesXPerRow[Math.min(rowIndex, store.shelvesZ - 1)] - 1) * store.gapX + shelfWidth/2, 
+          -shelvesCenterX + (rowLength - 1) * store.gapX + shelfWidth/2, 
           0, 
           zPosition - shelfWidth/2
         ]} 
       />
       <Pillar 
         position={[
-          -shelvesCenterX + (store.shelvesXPerRow[Math.min(rowIndex, store.shelvesZ - 1)] - 1) * store.gapX + shelfWidth/2, 
+          -shelvesCenterX + (rowLength - 1) * store.gapX + shelfWidth/2, 
           0, 
           zPosition + shelfWidth/2
         ]} 

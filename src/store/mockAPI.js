@@ -61,8 +61,8 @@ export const stores = {
     storeName: "Çerkezköy - 2",
     archetype: "back-to-back",
     shelvesY: 3,
-    shelvesZ: 12,
-    shelvesXPerRow: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
+    shelvesZ: 20,
+    shelvesXPerRow: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
     boxData: [
     ],
     loadingAreas: {
