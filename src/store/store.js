@@ -181,6 +181,58 @@ const useStore = create((set, get) => ({
               }
             }
           }
+          
+          // Handle YOL-CRK boxes for non-mal kabul areas
+          if (apiData.yolCrkBoxes?.length > 0) {
+            console.log(`Found ${apiData.yolCrkBoxes.length} YOL-CRK boxes`);
+            
+            // We only want to process YOL-CRK boxes for CRK-2
+            if (state.selectedStore === 'CRK-2') {
+              // Find all non-mal kabul loading areas
+              const nonMalKabulAreas = Object.entries(loadingAreas)
+                .filter(([key, area]) => area.isMalKabul === false)
+                .map(([key]) => key);
+              
+              if (nonMalKabulAreas.length > 0) {
+                console.log(`Found ${nonMalKabulAreas.length} non-mal kabul areas for YOL-CRK boxes`);
+                
+                // Distribute YOL-CRK boxes among non-mal kabul areas
+                apiData.yolCrkBoxes.forEach((box, index) => {
+                  // Pick a non-mal kabul area in round-robin fashion
+                  const areaKey = nonMalKabulAreas[index % nonMalKabulAreas.length];
+                  const area = loadingAreas[areaKey];
+                  
+                  // Find an empty spot in the area
+                  for (let y = 0; y < area.boxesY; y++) {
+                    for (let z = 0; z < area.boxesZ; z++) {
+                      for (let x = 0; x < area.boxesX; x++) {
+                        // Check if this position is already occupied
+                        const isOccupied = area.boxes.some(existingBox => 
+                          existingBox.boxNumber[0] === x && 
+                          existingBox.boxNumber[1] === y && 
+                          existingBox.boxNumber[2] === z
+                        );
+                        
+                        if (!isOccupied) {
+                          // Add box to this position
+                          area.boxes.push({
+                            ...box,
+                            boxNumber: [x, y, z],
+                            content: `${box.content || 'Unknown'} (${box.originalLocation || 'YOL-CRK'})`
+                          });
+                          return; // Exit the loops after placing the box
+                        }
+                      }
+                    }
+                  }
+                });
+                
+                console.log(`Distributed YOL-CRK boxes to non-mal kabul areas in CRK-2`);
+              } else {
+                console.log('No non-mal kabul areas found for YOL-CRK boxes');
+              }
+            }
+          }
         } else {
           // If API returned empty data for this store, use the empty boxData from mockAPI
           console.log(`No API data for ${state.selectedStore}, using empty box data`);

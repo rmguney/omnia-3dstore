@@ -243,7 +243,7 @@ const extractDimensionsFromLocationCodes = (apiData) => {
 const transformApiData = (apiData) => {
   if (!Array.isArray(apiData)) {
     console.error('API data is not an array:', apiData);
-    return { 'CRK-2': [], 'CRK-1': [], 'malKabulBoxes': [], dimensions: { 'CRK-1': {}, 'CRK-2': {} } };
+    return { 'CRK-2': [], 'CRK-1': [], 'malKabulBoxes': [], 'yolCrkBoxes': [], dimensions: { 'CRK-1': {}, 'CRK-2': {} } };
   }
   
   // Extract dimension data from location codes
@@ -254,6 +254,7 @@ const transformApiData = (apiData) => {
     'CRK-2': [],
     'CRK-1': [],
     'malKabulBoxes': [], // Special collection for non-standard boxes
+    'yolCrkBoxes': [],   // Special collection for YOL-CRK boxes
     dimensions // Include the dimension data for store configuration
   };
   
@@ -267,6 +268,31 @@ const transformApiData = (apiData) => {
       // Skip items with location code starting with L9
       if (locationCode && locationCode.startsWith('L9')) {
         console.log(`Skipping item with L9 location code: ${locationCode}`);
+        return;
+      }
+      
+      // Special case for YOL-CRK location codes
+      if (locationCode && locationCode.startsWith('YOL-CRK')) {
+        const box = {
+          content: item.stokCinsi || 'Unknown Item',
+          present: true,
+          displayLocation: locationCode || 'YOL-CRK Location',
+          paletId: item.palet,
+          customerName: item.cariAdi,
+          quantity: item.toplam,
+          status: item.aktif === true ? 'Aktif' : 'İnaktif',
+          expirationDate: item.skt,
+          entryDate: item.tarih,
+          weight: item.kilo,
+          stockCode: item.stokKodu,
+          _apiData: item,
+          isFromApi: true,
+          isYolCrk: true,  // Special flag for YOL-CRK items
+          originalLocation: locationCode
+        };
+        
+        // YOL-CRK items always go to CRK-2
+        groupedData.yolCrkBoxes.push({...box, store: 'CRK-2'});
         return;
       }
       

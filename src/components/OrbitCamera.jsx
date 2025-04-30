@@ -29,7 +29,19 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
   // Track if camera is still moving to block hover events
   const lastInteractionTime = useRef(0)
   const isMoving = useRef(false)
-  
+
+  // Add zoom animation state
+  const zoomAnimating = useRef(false)
+  const currentDistance = useRef(0)
+  const targetDistance = useRef(0)
+  const zoomSpeed = useRef(0)
+  const zoomMomentum = useRef(0)
+  const ZOOM_SMOOTHING = 0.15
+  const ZOOM_MOMENTUM_DECAY = 0.92
+  const WHEEL_SENSITIVITY = 0.0015
+  // Add variable to track last zoom interaction time
+  const lastZoomTime = useRef(0)
+
   // Make camera rotation state globally available
   useEffect(() => {
     // Add global access to camera state
@@ -54,6 +66,12 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
     if (camera) {
       camera.position.set(25, 11, 9);
       camera.lookAt(0, 0, 0);
+      // Initialize zoom distance tracking
+      currentDistance.current = new THREE.Vector3().subVectors(
+        camera.position, 
+        new THREE.Vector3(0, 0, 0)
+      ).length();
+      targetDistance.current = currentDistance.current;
     }
     
     // Reset controls if they exist
@@ -64,6 +82,8 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
     
     // Reset animation state
     animating.current = false;
+    zoomAnimating.current = false;
+    zoomMomentum.current = 0;
   }, [camera, selectedStore]);
 
   // Add lerp helper function
@@ -76,6 +96,58 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
     targetLookAt.current.copy(lookAtPos);
     currentLookAt.current.copy(controlsRef.current.target);
   };
+
+  // Add function to handle zoom with animation
+  const handleWheel = (e) => {
+    if (!controlsRef.current) return;
+    
+    // Get camera-to-target vector
+    const cameraToTarget = new THREE.Vector3().subVectors(
+      camera.position,
+      controlsRef.current.target
+    );
+    
+    // Calculate current distance
+    currentDistance.current = cameraToTarget.length();
+    
+    // Calculate zoom direction and apply sensitivity
+    const zoomDelta = e.deltaY * WHEEL_SENSITIVITY;
+    
+    // Update zoom momentum (acceleration-based zooming)
+    zoomMomentum.current += zoomDelta;
+    
+    // Calculate target distance with constraints
+    const newTargetDistance = Math.max(
+      Math.min(
+        targetDistance.current * (1 + zoomDelta),
+        radius // max distance
+      ),
+      2 // min distance
+    );
+    
+    targetDistance.current = newTargetDistance;
+    zoomAnimating.current = true;
+    
+    // Prevent default behavior
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Update interaction time to block hover during zoom
+    isMoving.current = true;
+    lastInteractionTime.current = Date.now();
+    // Track last zoom time separately
+    lastZoomTime.current = Date.now();
+  };
+
+  // Add wheel event listener
+  useEffect(() => {
+    // Get the canvas element
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      canvas.addEventListener('wheel', handleWheel, { passive: false });
+      return () => canvas.removeEventListener('wheel', handleWheel);
+    }
+  }, []);
 
   // Cache the best camera position results to avoid recalculations
   const cameraPositionCache = useRef(new Map())
@@ -143,6 +215,7 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
 
   // Add frame loop for smooth animation with throttling
   useFrame(() => {
+    // Handle standard camera movement animation
     if (animating.current && controlsRef.current && !userInteracting.current) {
       const now = Date.now()
       
@@ -198,10 +271,76 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
       // User is manually controlling the camera
       isMoving.current = true;
       lastInteractionTime.current = Date.now();
+      
+      // Update current distance during manual camera movement
+      if (controlsRef.current) {
+        const cameraToTarget = new THREE.Vector3().subVectors(
+          camera.position,
+          controlsRef.current.target
+        );
+        currentDistance.current = cameraToTarget.length();
+        targetDistance.current = currentDistance.current;
+      }
     } else {
       // Camera is idle - enable hover instantly (1ms instead of 5ms)
       if (Date.now() - lastInteractionTime.current > 1) {
         isMoving.current = false;
+      }
+    }
+    
+    // Handle zoom animation
+    if (zoomAnimating.current && controlsRef.current) {
+      // Apply zoom momentum with decay
+      zoomMomentum.current *= ZOOM_MOMENTUM_DECAY;
+      
+      // Get current camera-to-target vector
+      const cameraToTarget = new THREE.Vector3().subVectors(
+        camera.position,
+        controlsRef.current.target
+      );
+      
+      // Get normalized direction
+      const direction = cameraToTarget.clone().normalize();
+      
+      // Calculate new distance with smooth interpolation
+      const newDistance = lerp(
+        currentDistance.current,
+        targetDistance.current,
+        ZOOM_SMOOTHING
+      );
+      
+      // Apply distance change to camera position
+      const newPosition = controlsRef.current.target.clone().add(
+        direction.multiplyScalar(newDistance)
+      );
+      
+      // Update camera position
+      camera.position.copy(newPosition);
+      currentDistance.current = newDistance;
+      
+      // Update controls
+      controlsRef.current.update();
+      
+      // Check if zoom animation should end
+      const distanceDiff = Math.abs(currentDistance.current - targetDistance.current);
+      const momentumMagnitude = Math.abs(zoomMomentum.current);
+      
+      if (distanceDiff < 0.01 && momentumMagnitude < 0.001) {
+        zoomAnimating.current = false;
+        zoomMomentum.current = 0;
+        
+        // Allow hover again if not moving for other reasons
+        if (!animating.current && !userInteracting.current) {
+          isMoving.current = false;
+        }
+      } else {
+        // Still animating - but allow hover if time since last zoom input exceeds threshold
+        if (Date.now() - lastZoomTime.current > 1) {
+          isMoving.current = false;
+        } else {
+          isMoving.current = true;
+          lastInteractionTime.current = Date.now();
+        }
       }
     }
   });
@@ -293,6 +432,8 @@ export default function OrbitCamera({ planeWidth, planeDepth, shelvesCenterX, sh
       rotateSpeed={0.5}
       enablePan={true}
       panSpeed={0.5}
+      // Disable native zoom to use custom implementation
+      enableZoom={false}
       // Increase damping factor to reduce momentum even more - maximum damping for instant stops
       enableDamping={true}
       dampingFactor={0.4}
