@@ -2,7 +2,62 @@
 // it gets the number of shelves and what is inside the boxes from the api and sets the scene accordingly
 
 export const stores = {
-  store1: {
+  "CRK-1": {
+    storeName: "Çerkezköy - 1",
+    archetype: "back-to-back",
+    shelvesY: 3,
+    shelvesZ: 8,
+    shelvesXPerRow: [18, 18, 18, 18, 18, 18, 18, 18],
+    boxData: [
+    ],
+    loadingAreas: {
+      frontLeft: {
+        position: "frontLeft",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5, // distance from the edge
+        isMalKabul: false,
+      },
+      frontRight: {
+        position: "frontRight",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+        isMalKabul: true,
+      },
+      backLeft: {
+        position: "backLeft",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+        isMalKabul: false,
+      },
+      backRight: {
+        position: "backRight",
+        boxesX: 3,
+        boxesY: 1,
+        boxesZ: 4,
+        gapX: 1.51,
+        gapY: 1.2,
+        gapZ: 1.51,
+        inset: 5,
+        isMalKabul: true,
+      }
+    },
+  },
+  "CRK-2": {
     storeName: "Çerkezköy - 2",
     archetype: "back-to-back",
     shelvesY: 3,
@@ -65,61 +120,6 @@ export const stores = {
         boxes: [
 
         ]
-      }
-    },
-  },
-  store2: {
-    storeName: "Çerkezköy - 1",
-    archetype: "back-to-back",
-    shelvesY: 3,
-    shelvesZ: 8,
-    shelvesXPerRow: [18, 18, 18, 18, 18, 18, 18, 18],
-    boxData: [
-    ],
-    loadingAreas: {
-      frontLeft: {
-        position: "frontLeft",
-        boxesX: 3,
-        boxesY: 1,
-        boxesZ: 4,
-        gapX: 1.51,
-        gapY: 1.2,
-        gapZ: 1.51,
-        inset: 5, // distance from the edge
-        isMalKabul: false,
-      },
-      frontRight: {
-        position: "frontRight",
-        boxesX: 3,
-        boxesY: 1,
-        boxesZ: 4,
-        gapX: 1.51,
-        gapY: 1.2,
-        gapZ: 1.51,
-        inset: 5,
-        isMalKabul: true,
-      },
-      backLeft: {
-        position: "backLeft",
-        boxesX: 3,
-        boxesY: 1,
-        boxesZ: 4,
-        gapX: 1.51,
-        gapY: 1.2,
-        gapZ: 1.51,
-        inset: 5,
-        isMalKabul: false,
-      },
-      backRight: {
-        position: "backRight",
-        boxesX: 3,
-        boxesY: 1,
-        boxesZ: 4,
-        gapX: 1.51,
-        gapY: 1.2,
-        gapZ: 1.51,
-        inset: 5,
-        isMalKabul: true,
       }
     },
   },

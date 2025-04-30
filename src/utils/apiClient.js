@@ -34,16 +34,16 @@ const mapLocationToBoxNumber = (locationCode) => {
     const position = parseInt(parts[1], 10) - 1; // Convert to 0-based (API's second digit)
     const level = parseInt(parts[2], 10) - 1;    // Convert to 0-based (API's third digit)
     
-    // Determine if this is in store1 or store2
-    const isStore1 = section >= 'I'; // I and beyond are store1
+    // Determine if this is in CRK-2 or CRK-1
+    const isCRK2 = section >= 'I'; // I and beyond are CRK-2
     
     // Convert section letter to number with different indexing for each store
     let sectionNumber;
-    if (isStore1) {
-      // For store1, I becomes 0, J becomes 1, etc.
+    if (isCRK2) {
+      // For CRK-2, I becomes 0, J becomes 1, etc.
       sectionNumber = section.charCodeAt(0) - 'I'.charCodeAt(0);
     } else {
-      // For store2, A becomes 0, B becomes 1, etc. (unchanged)
+      // For CRK-1, A becomes 0, B becomes 1, etc. (unchanged)
       sectionNumber = section.charCodeAt(0) - 'A'.charCodeAt(0);
     }
     
@@ -65,74 +65,78 @@ const mapLocationToBoxNumber = (locationCode) => {
 /**
  * Determines which store a pallet belongs to based on section code
  * @param {string} locationCode - Location code from API (e.g., "A-1-1")
- * @returns {string} - Store identifier ("store1", "store2", etc.)
+ * @returns {string} - Store identifier ("CRK-2", "CRK-1", etc.)
  */
 const determineStore = (locationCode) => {
-  if (!locationCode || typeof locationCode !== 'string') return 'store1';
+  if (!locationCode || typeof locationCode !== 'string') return 'CRK-2';
   
   // Extract section letter
   const section = locationCode.charAt(0);
   
-  // A to H is Store-2 as specified (changed from I to H)
+  // A to H is CRK-1 as specified (changed from I to H)
   if (section >= 'A' && section <= 'H') {
-    return 'store2';
+    return 'CRK-1';
   }
   
-  // Default to store1 for any other sections (including I and beyond)
-  return 'store1';
+  // Default to CRK-2 for any other sections (including I and beyond)
+  return 'CRK-2';
 };
 
 /**
- * Transforms API response to internal data format
+ * Transforms API response to internal data format with optimized processing
  * @param {Array} apiData - Raw data from the API
  * @returns {Object} - Transformed data grouped by store
  */
 const transformApiData = (apiData) => {
   if (!Array.isArray(apiData)) {
     console.error('API data is not an array:', apiData);
-    return { store1: [], store2: [] };
+    return { 'CRK-2': [], 'CRK-1': [] };
   }
   
-  // Group by store
+  // Pre-allocate arrays with estimated capacity
   const groupedData = {
-    store1: [],
-    store2: []
+    'CRK-2': [],
+    'CRK-1': []
   };
+  
+  // Create a mapping cache to avoid redundant calculations
+  const locationCache = {};
   
   apiData.forEach(item => {
     try {
-      const boxNumber = mapLocationToBoxNumber(item.lokasyonKodu);
-      const store = determineStore(item.lokasyonKodu);
+      const locationCode = item.lokasyonKodu;
+      
+      // Use cached mapping if available
+      if (!locationCache[locationCode]) {
+        locationCache[locationCode] = {
+          boxNumber: mapLocationToBoxNumber(locationCode),
+          store: determineStore(locationCode)
+        };
+      }
+      
+      const { boxNumber, store } = locationCache[locationCode];
       
       const box = {
         boxNumber,
         content: item.stokCinsi || 'Unknown Item',
         present: true,
         
-        // Enhanced display information
-        displayLocation: item.lokasyonKodu || 'Unknown Location', // Primary display (API format like "A-1-1")
-        internalLocation: boxNumber.join(','),                   // Secondary display (internal format like "0,0,0")
+        // Essential display information
+        displayLocation: locationCode || 'Unknown Location',
         
-        // Additional data from API
+        // Only include essential data for rendering
         paletId: item.palet,
-        locationCode: item.lokasyonKodu,
-        stockCode: item.stokKodu,
         customerName: item.cariAdi,
         quantity: item.toplam,
-        weight: item.toplamAgirlik,
-        expirationDate: item.skT_,
-        entryDate: item.girisTarihi,
-        status: item.durum,
-        locationType: item.lokasyonTipi,
-        locationStatus: item.lokasyonDurum,
         
-        // Flag to indicate this came from the API
+        // Include full data reference for detailed views
+        _apiData: item,
         isFromApi: true
       };
       
       groupedData[store].push(box);
     } catch (error) {
-      console.error('Error processing API item:', item, error);
+      console.error('Error processing API item:', error);
     }
   });
   
@@ -214,7 +218,7 @@ export const fetchPalletData = async (depoKodu = 'CRK') => {
   // If all requests failed, return empty data
   if (!apiData) {
     console.error('All API endpoints failed:', lastError);
-    return { store1: [], store2: [] };
+    return { 'CRK-2': [], 'CRK-1': [] };
   }
   
   // Transform API data to our internal format
@@ -263,7 +267,10 @@ const fetchWithScriptTag = (url) => {
   });
 };
 
-// Add a test function that can be called from the browser console
+/**
+ * Test API connection via different endpoints
+ * @returns {Object} - Status of each API endpoint tested
+ */
 export const testApiConnection = async () => {
   console.log('Testing API connection...');
   const results = { proxy: null, production: null };

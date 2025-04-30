@@ -28,8 +28,8 @@ const archetypeConfigs = {
 
 const useStore = create((set, get) => ({
   // Scene configuration - explicitly set all default values
-  selectedStore: 'store1',
-  ...stores.store1,
+  selectedStore: 'CRK-2',
+  ...stores['CRK-2'],
   ...archetypeConfigs['back-to-back'],
 
   // Box state
@@ -205,6 +205,33 @@ const useStore = create((set, get) => ({
     set({ selectedStore: storeKey });
     const state = get();
     state.initializeBoxData();
+  },
+  
+  // Add visibility state for culling
+  visibilityConfig: {
+    frustumCulling: true,
+    cullingDistance: 30,
+    lodDistance: 15
+  },
+  
+  setVisibilityConfig: (config) => set(state => ({
+    visibilityConfig: {
+      ...state.visibilityConfig,
+      ...config
+    }
+  })),
+  
+  // Helper to determine if a position should be rendered based on camera
+  isInFrustum: (position, camera) => {
+    if (!camera || !get().visibilityConfig.frustumCulling) return true;
+    
+    // Simple distance-based culling
+    const distanceSquared = 
+      Math.pow(position[0] - camera.position.x, 2) +
+      Math.pow(position[1] - camera.position.y, 2) +
+      Math.pow(position[2] - camera.position.z, 2);
+      
+    return distanceSquared <= Math.pow(get().visibilityConfig.cullingDistance, 2);
   },
 }));
 

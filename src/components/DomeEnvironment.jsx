@@ -3,20 +3,27 @@ import * as THREE from 'three'
 
 export default function DomeEnvironment({ width, depth }) {
   const radius = Math.max(width, depth) * 6
-  const segments = 32
-  const rings = 16
-  const gridStep = 2
+  // Reduce segments for better performance
+  const segments = Math.min(32, Math.max(16, Math.floor(radius / 5)))
+  const rings = Math.min(16, Math.max(8, Math.floor(radius / 10)))
+  // Increase grid step for fewer lines
+  const gridStep = 4
   const groundColor = "#172554"
 
   const gridLines = useMemo(() => {
     const lines = []
     
-    // Longitude lines
-    for (let i = 0; i < segments; i += gridStep) {
-      const angle = (i / segments) * Math.PI * 2
+    // Adaptive grid - fewer lines for larger radius
+    const actualSegments = Math.floor(segments / gridStep) * gridStep
+    const actualRings = Math.floor(rings / gridStep) * gridStep
+    
+    // Longitude lines - reduce total number
+    for (let i = 0; i < actualSegments; i += gridStep) {
+      const angle = (i / actualSegments) * Math.PI * 2
       const points = []
-      for (let j = 0; j <= rings; j++) {  // Use all points for smoother lines
-        const phi = (j / rings) * (Math.PI / 2)
+      // Use fewer points for smoother lines but better performance
+      for (let j = 0; j <= actualRings; j += gridStep/2) {
+        const phi = (j / actualRings) * (Math.PI / 2)
         const x = radius * Math.cos(angle) * Math.cos(phi)
         const y = radius * Math.sin(phi)
         const z = radius * Math.sin(angle) * Math.cos(phi)
@@ -25,12 +32,12 @@ export default function DomeEnvironment({ width, depth }) {
       lines.push(points)
     }
     
-    // Latitude lines
-    for (let j = gridStep; j < rings; j += gridStep) {
-      const phi = (j / rings) * (Math.PI / 2)
+    // Latitude lines - reduce total number
+    for (let j = gridStep; j < actualRings; j += gridStep) {
+      const phi = (j / actualRings) * (Math.PI / 2)
       const points = []
-      for (let i = 0; i <= segments; i++) {  // Use all points for smoother lines
-        const angle = (i / segments) * Math.PI * 2
+      for (let i = 0; i <= actualSegments; i += gridStep/2) {
+        const angle = (i / actualSegments) * Math.PI * 2
         const x = radius * Math.cos(angle) * Math.cos(phi)
         const y = radius * Math.sin(phi)
         const z = radius * Math.sin(angle) * Math.cos(phi)
@@ -40,11 +47,11 @@ export default function DomeEnvironment({ width, depth }) {
     }
     
     return lines
-  }, [radius, segments])
+  }, [radius, segments, rings, gridStep])
 
-  // Create ground circle
+  // Use low-poly ground geometry
   const groundGeometry = useMemo(() => {
-    return new THREE.CircleGeometry(radius, segments)
+    return new THREE.CircleGeometry(radius, Math.min(64, segments * 2))
   }, [radius, segments])
 
   return (

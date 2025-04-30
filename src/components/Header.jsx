@@ -9,6 +9,18 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
   
+  // Get a valid store to display when the selected one doesn't exist
+  const storeToDisplay = selectedStore && stores[selectedStore] 
+    ? selectedStore 
+    : Object.keys(stores)[0] || "CRK-2"; // Default to first store or CRK-2
+  
+  // When the page loads with an invalid store, select a valid one
+  useEffect(() => {
+    if (selectedStore && !stores[selectedStore] && stores[storeToDisplay]) {
+      handleStoreChange({ target: { value: storeToDisplay } });
+    }
+  }, [selectedStore, storeToDisplay, handleStoreChange]);
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
@@ -44,7 +56,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="px-3 py-1 bg-transparent text-white hover:text-orange-400 transition-colors duration-200 font-bold text-lg rounded flex items-center gap-1.5 tracking-wider border border-transparent hover:border-white/20 hover:bg-white/5"
           >
-            {stores[selectedStore].storeName}
+            {stores[storeToDisplay]?.storeName || "Depo Seçin"}
             <svg
               className={`w-3.5 h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
               fill="none"
@@ -72,7 +84,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen, selectedStore,
                       setIsDropdownOpen(false);
                     }}
                     className={`block w-full text-left p-2 px-3 text-xs font-semibold tracking-wider transition-colors duration-300 ${
-                      selectedStore === key 
+                      storeToDisplay === key 
                         ? 'bg-orange-500 text-white' 
                         : 'text-white hover:bg-white/10'
                     }`}

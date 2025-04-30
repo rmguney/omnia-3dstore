@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useEffect, useState, useMemo } from 'react'
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier'
 import * as THREE from 'three'
@@ -18,6 +18,11 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   const shadowCameraRef = useRef()
   const [hoveredBox, setHoveredBox] = useState(null)
   const [hoveredBoxNumber, setHoveredBoxNumber] = useState(null)
+  
+  // Add virtualization state to track visible areas
+  const [visibleBounds, setVisibleBounds] = useState({
+    minX: -Infinity, maxX: Infinity, minZ: -Infinity, maxZ: Infinity, expanded: false
+  })
   
   // Track loading state from store
   const isLoading = useStore(state => state.isLoading)
@@ -39,6 +44,56 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   const handlePointerOut = () => {
     onPointerOut && onPointerOut()
   }
+  
+  // Update visible bounds based on camera position
+  const updateVisibleBounds = useCallback(() => {
+    if (!store.isFirstPerson) return; // Only apply in first person mode
+    
+    // Use the existing camera reference
+    const camera = window.camera;
+    if (!camera) return;
+    
+    // Calculate view frustum - where camera is looking
+    const cameraPosition = camera.position;
+    const lookDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    
+    // Determine visible area (simple rectangular bounds)
+    // Expand by 2 rows/columns in each direction for smooth transitions
+    const viewDistance = 10;
+    const viewWidth = 5;
+    
+    const centerX = Math.floor(cameraPosition.x / store.gapX);
+    const centerZ = Math.floor(cameraPosition.z / store.gapZ);
+    
+    setVisibleBounds({
+      minX: centerX - viewWidth,
+      maxX: centerX + viewWidth,
+      minZ: centerZ - viewWidth,
+      maxZ: centerZ + viewWidth,
+      expanded: true
+    });
+  }, [store.gapX, store.gapZ, store.isFirstPerson]);
+
+  useEffect(() => {
+    if (store.isFirstPerson) {
+      const interval = setInterval(updateVisibleBounds, 500);
+      return () => clearInterval(interval);
+    } else {
+      // When in orbit mode, render everything
+      setVisibleBounds({
+        minX: -Infinity, maxX: Infinity,
+        minZ: -Infinity, maxZ: Infinity,
+        expanded: false
+      });
+    }
+  }, [store.isFirstPerson, updateVisibleBounds]);
+
+  // Filter boxes for rendering based on visibility
+  const isInVisibleRange = (x, z) => {
+    if (!visibleBounds.expanded) return true;
+    return x >= visibleBounds.minX && x <= visibleBounds.maxX &&
+           z >= visibleBounds.minZ && z <= visibleBounds.maxZ;
+  };
   
   // Memoize plane dimensions calculation to prevent unnecessary recalculations
   const { width: planeWidth, depth: planeDepth, offsetX, offsetZ } = useMemo(() => {
@@ -101,11 +156,15 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   // Display loading indicator
   if (isLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-blue-950 bg-opacity-80 z-50">
-        <div className="bg-white p-6 rounded-lg shadow-xl text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg font-semibold text-blue-950">Yükleniyor</p>
+      <div className="fixed inset-0 backdrop-blur-md bg-blue-950/90 flex flex-col items-center justify-center z-50">
+        <div className="relative w-16 h-16 mb-4">
+          <div className="absolute inset-0 border-[3px] border-indigo-400/80 border-t-transparent rounded-full animate-spin"></div>
+          <div className="absolute inset-0 border-[3px] border-violet-400/50 border-b-transparent rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.2s'}}></div>
         </div>
+        <p className="text-orange-400 text-base font-light tracking-wider" 
+           style={{textShadow: '0 0 10px rgba(0, 0, 0, 0.5), 0 0 3px rgba(0, 0, 0, 0.8)'}}>
+          Yükleniyor
+        </p>
       </div>
     );
   }
@@ -196,10 +255,13 @@ export default function Scene({ onPointerOver, onPointerOut }) {
             ))}
           </RigidBody>
           
-          {/* Render shelves and boxes with optimized lookup */}
+          {/* Render shelves and boxes with optimized lookup and virtualization */}
           {Array.from({ length: store.shelvesZ }, (_, z) =>
             Array.from({ length: store.shelvesY }, (_, y) =>
               Array.from({ length: store.shelvesXPerRow[z] }, (_, x) => {
+                // Skip if not in visible range (virtualization)
+                if (!isInVisibleRange(x, z)) return null;
+                
                 const zPosition = getZPosition(z);
                 const box = boxLookup[`${x}-${y}-${z}`];
                 const shelfPosition = [x * store.gapX - shelvesCenterX, y * store.gapY, zPosition];
@@ -239,7 +301,7 @@ export default function Scene({ onPointerOver, onPointerOut }) {
                     )}
                   </group>
                 )
-              })
+              }).filter(Boolean) // Remove null elements
             )
           )}
 
