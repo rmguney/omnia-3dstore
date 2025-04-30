@@ -11,3 +11,13 @@ body,
 body {
   @apply overscroll-y-none bg-white text-blue-950 antialiased;
 }
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}

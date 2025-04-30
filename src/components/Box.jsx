@@ -3,7 +3,7 @@ import { useRef, useState, useMemo } from 'react'
 import { useCursor } from '@react-three/drei'
 import * as THREE from 'three'
 
-export default function Box({ onClick, isSelected, content, boxNumber, onPointerOver, onPointerOut, ...props }) {
+export default function Box({ onClick, isSelected, content, boxNumber, fullData, onPointerOver, onPointerOut, ...props }) {
   const ref = useRef()
   const [hovered, setHovered] = useState(false)
   useCursor(hovered)
@@ -47,7 +47,7 @@ export default function Box({ onClick, isSelected, content, boxNumber, onPointer
           receiveShadow
           castShadow
           onClick={(e) => (e.stopPropagation(), onClick())}
-          onPointerOver={(e) => (e.stopPropagation(), setHovered(true), onPointerOver(content, boxNumber))}
+          onPointerOver={(e) => (e.stopPropagation(), setHovered(true), onPointerOver(content, boxNumber, fullData))}
           onPointerOut={() => (setHovered(false), onPointerOut())}>
           <primitive object={shared.geometries.box} />
           <primitive object={shared.materials.box} />

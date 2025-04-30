@@ -19,11 +19,20 @@ export default function Scene({ onPointerOver, onPointerOut }) {
   const [hoveredBox, setHoveredBox] = useState(null)
   const [hoveredBoxNumber, setHoveredBoxNumber] = useState(null)
   
+  // Track loading state from store
+  const isLoading = useStore(state => state.isLoading)
+  const hasApiError = useStore(state => state.hasApiError)
+  const apiErrorMessage = useStore(state => state.apiErrorMessage)
+  
   useEffect(() => {
     store.initializeBoxData()
   }, [])
 
-  const handlePointerOver = (content, boxNumber) => {
+  const handlePointerOver = (content, boxNumber, fullBoxData) => {
+    // Store the full box data in window for HoveredBox to access
+    if (typeof window !== 'undefined') {
+      window.hoveredBoxData = fullBoxData;
+    }
     onPointerOver && onPointerOver(content, boxNumber)
   }
 
@@ -88,6 +97,41 @@ export default function Scene({ onPointerOver, onPointerOut }) {
     });
     return lookup;
   }, [store.boxData]);
+
+  // Display loading indicator
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-blue-950 bg-opacity-80 z-50">
+        <div className="bg-white p-6 rounded-lg shadow-xl text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg font-semibold text-blue-950">Yükleniyor</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Display error message if API failed
+  if (hasApiError) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-blue-950 bg-opacity-80 z-50">
+        <div className="bg-white p-6 rounded-lg shadow-xl text-center max-w-md">
+          <div className="w-16 h-16 mx-auto mb-4 text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <p className="text-lg font-semibold text-red-600 mb-2">API Error</p>
+          <p className="text-gray-700 mb-4">{apiErrorMessage || 'Failed to load warehouse data. Using fallback data instead.'}</p>
+          <button 
+            onClick={() => store.initializeBoxData()}
+            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -177,8 +221,13 @@ export default function Scene({ onPointerOver, onPointerOut }) {
                       <Box
                         position={[x * store.gapX - shelvesCenterX, y * store.gapY + 0.6, zPosition]}
                         onClick={() => store.setFocusedBox([x, y, z], false)}
-                        onPointerOver={() => handlePointerOver(box.content, box.boxNumber)}
-                        onPointerOut={handlePointerOut}
+                        onPointerOver={() => handlePointerOver(box.content, box.boxNumber, box)}
+                        onPointerOut={() => {
+                          if (typeof window !== 'undefined') {
+                            window.hoveredBoxData = null;
+                          }
+                          handlePointerOut();
+                        }}
                         content={box.content}
                         boxNumber={box.boxNumber}
                         isSelected={store.selectedBox && 

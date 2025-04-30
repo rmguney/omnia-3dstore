@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { stores } from './mockAPI'
-import { generateTempBoxData, generateLoadingAreas } from '../utils/tempBoxPopulator'
+import { fetchPalletData } from '../utils/apiClient'
 
 // Define archetype-specific configurations
 const archetypeConfigs = {
@@ -35,13 +35,21 @@ const useStore = create((set, get) => ({
   // Box state
   selectedBox: null,
   focusedBox: null,
+  
+  // API state
+  isLoading: false,
+  hasApiError: false,
+  apiErrorMessage: null,
+  
+  // Flag to force using mock data (for debugging)
+  useMockData: false,
 
   // Camera state
   isFirstPerson: false,
   toggleCameraMode: () => set(state => ({ isFirstPerson: !state.isFirstPerson })),
 
-  // Essential actions
-  initializeBoxData: () => {
+  // Modified to work without tempBoxPopulator and without demo boxes
+  initializeBoxData: async () => {
     const state = get();
     
     // Make sure we're using the correct store's configuration
@@ -51,24 +59,68 @@ const useStore = create((set, get) => ({
     set({
       ...currentStore,
       ...archetypeConfigs[currentStore.archetype],
+      isLoading: true,
+      hasApiError: false,
+      apiErrorMessage: null
     });
     
-    // Initialize box data and loading areas
-    const loadingAreas = currentStore.loadingAreas ? 
-      generateLoadingAreas(currentStore.loadingAreas, currentStore.storeName) : 
-      {};
+    // Try to fetch real data from API (unless we're forcing mock data)
+    if (!state.useMockData) {
+      try {
+        const apiData = await fetchPalletData('CRK');
+        
+        // If we got data for the selected store, use it
+        if (apiData[state.selectedStore]?.length > 0) {
+          set({ 
+            boxData: apiData[state.selectedStore],
+            isLoading: false
+          });
+          console.log(`Using API data for ${state.selectedStore}: ${apiData[state.selectedStore].length} pallets found`);
+        } else {
+          // If API returned empty data for this store, use the empty boxData from mockAPI
+          console.log(`No API data for ${state.selectedStore}, using empty box data`);
+          set({ 
+            boxData: currentStore.boxData || [],
+            isLoading: false
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching pallet data:', error);
+        
+        // On error, use empty boxData from mockAPI
+        set({ 
+          boxData: currentStore.boxData || [],
+          isLoading: false,
+          hasApiError: true,
+          apiErrorMessage: `Failed to fetch data: ${error.message}`
+        });
+      }
+    } else {
+      // Use mock data directly if forced
+      set({ 
+        boxData: currentStore.boxData || [], 
+        isLoading: false 
+      });
+      console.log('Using mock data (forced)');
+    }
     
-    const boxData = (!currentStore.boxData || currentStore.boxData.length === 0) 
-      ? generateTempBoxData(
-          currentStore.shelvesY,
-          currentStore.shelvesZ,
-          currentStore.shelvesXPerRow,
-          currentStore.storeName
-        )
-      : currentStore.boxData;
-
-    set({ loadingAreas, boxData });
+    // Initialize loading areas with empty boxes if needed
+    const loadingAreas = {};
+    
+    if (currentStore.loadingAreas) {
+      Object.entries(currentStore.loadingAreas).forEach(([key, config]) => {
+        loadingAreas[key] = {
+          ...config,
+          boxes: config.boxes || []  // Use existing boxes or empty array
+        };
+      });
+    }
+    
+    set({ loadingAreas });
   },
+
+  // Toggle mock data usage (for debugging)
+  toggleMockData: () => set(state => ({ useMockData: !state.useMockData })),
 
   setSelectedBox: (box) => set({ selectedBox: box }),
 
