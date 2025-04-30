@@ -5,9 +5,9 @@ export const stores = {
   "CRK-1": {
     storeName: "Çerkezköy - 1",
     archetype: "back-to-back",
-    shelvesY: 3,
-    shelvesZ: 8,
-    shelvesXPerRow: [27, 27, 27, 24, 27, 27, 27, 30],
+    shelvesY: 0,
+    shelvesZ: 0,
+    shelvesXPerRow: [],
     boxData: [
     ],
     loadingAreas: {
@@ -60,9 +60,9 @@ export const stores = {
   "CRK-2": {
     storeName: "Çerkezköy - 2",
     archetype: "back-to-back",
-    shelvesY: 3,
-    shelvesZ: 20,
-    shelvesXPerRow: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
+    shelvesY: 0,
+    shelvesZ: 0,
+    shelvesXPerRow: [0],
     boxData: [
     ],
     loadingAreas: {

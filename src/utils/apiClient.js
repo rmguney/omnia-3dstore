@@ -51,7 +51,24 @@ const mapLocationToBoxNumber = (locationCode) => {
     let sectionNumber;
     if (isCRK2) {
       // For CRK-2, I becomes 0, J becomes 1, etc.
-      sectionNumber = section.charCodeAt(0) - 'I'.charCodeAt(0);
+      // But we need to skip 'Q' and 'W' in our internal mapping
+      const baseCode = section.charCodeAt(0);
+      const iCode = 'I'.charCodeAt(0);
+      const qCode = 'Q'.charCodeAt(0);
+      const wCode = 'W'.charCodeAt(0);
+      
+      if (baseCode < qCode) {
+        // Before Q: normal mapping (I=0, J=1, ..., P=7)
+        sectionNumber = baseCode - iCode;
+      } else if (baseCode < wCode) {
+        // After Q but before W: skip Q (R=8, S=9, ..., V=12)
+        sectionNumber = baseCode - iCode - 1;
+      } else {
+        // W and after: skip Q and W (X=13, Y=14, Z=15)
+        sectionNumber = baseCode - iCode - 2;
+      }
+      
+      console.log(`Mapped CRK-2 section ${section} to z=${sectionNumber} (skipping Q and W)`);
     } else {
       // For CRK-1, A becomes 0, B becomes 1, etc. (unchanged)
       sectionNumber = section.charCodeAt(0) - 'A'.charCodeAt(0);
@@ -64,7 +81,7 @@ const mapLocationToBoxNumber = (locationCode) => {
     // Map according to corrected requirements:
     // x = position (second digit from API)
     // y = level (third digit from API)
-    // z = section (first digit from API)
+    // z = section (first digit from API, with Q and W skipped)
     return [position, level, sectionNumber];
   } catch (error) {
     console.error(`Error mapping location code ${locationCode}:`, error);
@@ -146,11 +163,32 @@ const extractDimensionsFromLocationCodes = (apiData) => {
       dimensions[store].maxX = Math.max(dimensions[store].maxX, position);
       dimensions[store].maxY = Math.max(dimensions[store].maxY, level);
       
-      // Calculate z-index based on section letter
-      const zIndex = section.charCodeAt(0) - (store === 'CRK-2' ? 'I'.charCodeAt(0) : 'A'.charCodeAt(0));
+      // Calculate z-index based on section letter, accounting for skipped letters
+      let zIndex;
+      if (store === 'CRK-2') {
+        const baseCode = section.charCodeAt(0);
+        const iCode = 'I'.charCodeAt(0);
+        const qCode = 'Q'.charCodeAt(0);
+        const wCode = 'W'.charCodeAt(0);
+        
+        if (baseCode < qCode) {
+          // Before Q: normal mapping
+          zIndex = baseCode - iCode;
+        } else if (baseCode < wCode) {
+          // After Q but before W: skip Q
+          zIndex = baseCode - iCode - 1;
+        } else {
+          // W and after: skip Q and W
+          zIndex = baseCode - iCode - 2;
+        }
+      } else {
+        // For CRK-1, normal A-H mapping
+        zIndex = section.charCodeAt(0) - 'A'.charCodeAt(0);
+      }
+      
       dimensions[store].maxZ = Math.max(dimensions[store].maxZ, zIndex + 1); // +1 because it's 0-indexed
       
-      // Update per-Z maximum X value
+      // Update per-Z maximum X value - use adjusted zIndex to correctly map shelves
       if (!dimensions[store].maxXPerZ[zIndex]) {
         dimensions[store].maxXPerZ[zIndex] = position;
       } else {
